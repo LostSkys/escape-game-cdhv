@@ -14,16 +14,180 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      players: {
+        Row: {
+          created_at: string
+          first_name: string
+          id: string
+          last_name: string
+          team_id: string
+        }
+        Insert: {
+          created_at?: string
+          first_name: string
+          id?: string
+          last_name: string
+          team_id: string
+        }
+        Update: {
+          created_at?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "players_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      steps: {
+        Row: {
+          content: Json
+          created_at: string
+          expected_answer: string | null
+          hint: string
+          id: string
+          step_order: number
+          title: string
+          type: Database["public"]["Enums"]["step_type"]
+          unlock_code: string
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          expected_answer?: string | null
+          hint: string
+          id?: string
+          step_order: number
+          title: string
+          type: Database["public"]["Enums"]["step_type"]
+          unlock_code: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          expected_answer?: string | null
+          hint?: string
+          id?: string
+          step_order?: number
+          title?: string
+          type?: Database["public"]["Enums"]["step_type"]
+          unlock_code?: string
+        }
+        Relationships: []
+      }
+      team_progress: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          faults: number
+          id: string
+          step_id: string
+          step_order: number
+          team_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          faults?: number
+          id?: string
+          step_id: string
+          step_order: number
+          team_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          faults?: number
+          id?: string
+          step_id?: string
+          step_order?: number
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_progress_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_progress_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          created_at: string
+          current_step: number
+          finished_at: string | null
+          id: string
+          name: string
+          started_at: string
+          token: string
+          total_faults: number
+        }
+        Insert: {
+          created_at?: string
+          current_step?: number
+          finished_at?: string | null
+          id?: string
+          name: string
+          started_at?: string
+          token?: string
+          total_faults?: number
+        }
+        Update: {
+          created_at?: string
+          current_step?: number
+          finished_at?: string | null
+          id?: string
+          name?: string
+          started_at?: string
+          token?: string
+          total_faults?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      complete_room_step: {
+        Args: { p_step_id: string; p_team_id: string }
+        Returns: Json
+      }
+      finish_game: { Args: { p_team_id: string }; Returns: undefined }
+      get_step_by_code: {
+        Args: { p_code: string }
+        Returns: {
+          content: Json
+          hint: string
+          id: string
+          step_order: number
+          title: string
+          type: Database["public"]["Enums"]["step_type"]
+        }[]
+      }
+      validate_step_answer: {
+        Args: { p_answer: string; p_step_id: string; p_team_id: string }
+        Returns: Json
+      }
     }
     Enums: {
-      [_ in never]: never
+      step_type: "question" | "enigme" | "minijeu" | "salle"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +314,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      step_type: ["question", "enigme", "minijeu", "salle"],
+    },
   },
 } as const
