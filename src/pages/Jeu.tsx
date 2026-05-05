@@ -140,7 +140,7 @@ const Jeu = () => {
                 id="code"
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
-                placeholder="CDHV01"
+                placeholder="Ex: CDHV01..."
                 maxLength={20}
                 className="h-14 text-xl font-mono tracking-widest text-center"
                 autoComplete="off"

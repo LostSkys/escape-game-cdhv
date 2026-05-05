@@ -107,7 +107,7 @@ const Inscription = () => {
               id="teamName"
               value={teamName}
               onChange={(e) => setTeamName(e.target.value)}
-              placeholder="Les Explorateurs"
+              placeholder="Ex: Les Explorateurs..."
               maxLength={60}
               className="h-12 text-lg"
               required
@@ -132,14 +132,14 @@ const Inscription = () => {
               {players.map((p, i) => (
                 <div key={i} className="flex gap-2 items-start">
                   <Input
-                    placeholder="Prénom"
+                    placeholder="Prénom du joueur..."
                     value={p.first_name}
                     onChange={(e) => updatePlayer(i, "first_name", e.target.value)}
                     maxLength={50}
                     required
                   />
                   <Input
-                    placeholder="Nom"
+                    placeholder="Nom du joueur..."
                     value={p.last_name}
                     onChange={(e) => updatePlayer(i, "last_name", e.target.value)}
                     maxLength={50}
