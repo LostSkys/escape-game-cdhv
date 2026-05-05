@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { adminAuth } from "@/lib/adminAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { ArrowLeft, LogOut, Medal, RefreshCw, Trophy, Users } from "lucide-react";
 
@@ -16,8 +17,10 @@ type TeamRow = {
   started_at: string;
   finished_at: string | null;
 };
-
 type PlayerRow = { team_id: string; first_name: string; last_name: string };
+
+const TOTAL_STEPS = 20;
+const REFRESH_MS = 5 * 60 * 1000; // 5 minutes
 
 const Admin = () => {
   const [authed, setAuthed] = useState(adminAuth.isAuthed());
@@ -25,8 +28,10 @@ const Admin = () => {
   const [teams, setTeams] = useState<TeamRow[]>([]);
   const [players, setPlayers] = useState<PlayerRow[]>([]);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = async () => {
+    setRefreshing(true);
     const [teamsRes, playersRes] = await Promise.all([
       supabase.from("teams").select("id, name, current_step, total_faults, started_at, finished_at"),
       supabase.from("players").select("team_id, first_name, last_name"),
@@ -34,29 +39,23 @@ const Admin = () => {
     if (teamsRes.data) setTeams(teamsRes.data);
     if (playersRes.data) setPlayers(playersRes.data);
     setLastRefresh(new Date());
+    setRefreshing(false);
   };
 
   useEffect(() => {
     if (!authed) return;
     load();
-    const interval = setInterval(load, 30000);
+    const interval = setInterval(load, REFRESH_MS);
     return () => clearInterval(interval);
   }, [authed]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (adminAuth.login(password)) {
-      setAuthed(true);
-      toast.success("Connecté");
-    } else {
-      toast.error("Mot de passe incorrect");
-    }
+    if (adminAuth.login(password)) { setAuthed(true); toast.success("Connecté"); }
+    else toast.error("Mot de passe incorrect");
   };
 
-  const logout = () => {
-    adminAuth.logout();
-    setAuthed(false);
-  };
+  const logout = () => { adminAuth.logout(); setAuthed(false); };
 
   if (!authed) {
     return (
@@ -68,13 +67,8 @@ const Admin = () => {
           <h1 className="text-2xl font-bold">Espace organisateur</h1>
           <div className="space-y-2">
             <Label htmlFor="pwd">Mot de passe</Label>
-            <Input
-              id="pwd"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoFocus
-            />
+            <Input id="pwd" type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+              placeholder="Mot de passe organisateur..." autoFocus />
           </div>
           <Button type="submit" className="w-full">Entrer</Button>
         </form>
@@ -82,7 +76,6 @@ const Admin = () => {
     );
   }
 
-  // Tri : équipes terminées en haut (par fautes asc, puis temps), puis en cours (par étape desc, fautes asc)
   const sorted = [...teams].sort((a, b) => {
     if (a.finished_at && b.finished_at) {
       if (a.total_faults !== b.total_faults) return a.total_faults - b.total_faults;
@@ -96,8 +89,7 @@ const Admin = () => {
 
   const finishedTeams = sorted.filter((t) => t.finished_at);
   const playersByTeam = players.reduce<Record<string, PlayerRow[]>>((acc, p) => {
-    (acc[p.team_id] ||= []).push(p);
-    return acc;
+    (acc[p.team_id] ||= []).push(p); return acc;
   }, {});
 
   return (
@@ -108,8 +100,9 @@ const Admin = () => {
             <ArrowLeft className="h-4 w-4" /> Accueil
           </Link>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={load}>
-              <RefreshCw className="h-4 w-4 mr-1" /> Actualiser
+            <Button variant="default" size="sm" onClick={load} disabled={refreshing}>
+              <RefreshCw className={`h-4 w-4 mr-1 ${refreshing ? "animate-spin" : ""}`} />
+              Forcer l'actualisation
             </Button>
             <Button variant="ghost" size="sm" onClick={logout}>
               <LogOut className="h-4 w-4 mr-1" /> Déconnexion
@@ -121,7 +114,7 @@ const Admin = () => {
           <p className="text-xs uppercase tracking-[0.3em] text-primary font-semibold">Tableau de bord</p>
           <h1 className="text-4xl font-extrabold">Suivi des équipes</h1>
           <p className="text-sm text-muted-foreground">
-            Actualisation automatique toutes les 30 secondes · Dernière : {lastRefresh.toLocaleTimeString()}
+            Actualisation automatique toutes les 5 min · Dernière : {lastRefresh.toLocaleTimeString()}
           </p>
         </header>
 
@@ -172,39 +165,41 @@ const Admin = () => {
                 <tr>
                   <th className="p-4">Équipe</th>
                   <th className="p-4">Joueurs</th>
-                  <th className="p-4 text-center">Étape actuelle</th>
+                  <th className="p-4 w-64">Progression</th>
                   <th className="p-4 text-center">Fautes</th>
                   <th className="p-4 text-center">Statut</th>
                 </tr>
               </thead>
               <tbody>
-                {sorted.map((t) => (
-                  <tr key={t.id} className="border-t border-border">
-                    <td className="p-4 font-semibold">{t.name}</td>
-                    <td className="p-4 text-muted-foreground">
-                      {(playersByTeam[t.id] ?? []).map((p) => `${p.first_name} ${p.last_name}`).join(", ") || "—"}
-                    </td>
-                    <td className="p-4 text-center">
-                      <span className="inline-block bg-primary/10 text-primary rounded px-2 py-1 font-mono">
-                        {t.current_step}
-                      </span>
-                    </td>
-                    <td className="p-4 text-center">{t.total_faults}</td>
-                    <td className="p-4 text-center">
-                      {t.finished_at ? (
-                        <span className="text-success">✅ Terminé</span>
-                      ) : (
-                        <span className="text-muted-foreground">⏳ En cours</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {sorted.map((t) => {
+                  const completed = Math.min(TOTAL_STEPS, Math.max(0, t.current_step - 1));
+                  const pct = Math.round((completed / TOTAL_STEPS) * 100);
+                  return (
+                    <tr key={t.id} className="border-t border-border">
+                      <td className="p-4 font-semibold">{t.name}</td>
+                      <td className="p-4 text-muted-foreground">
+                        {(playersByTeam[t.id] ?? []).map((p) => `${p.first_name} ${p.last_name}`).join(", ") || "—"}
+                      </td>
+                      <td className="p-4">
+                        <div className="space-y-1">
+                          <Progress value={pct} className="h-2" />
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>{completed}/{TOTAL_STEPS} étapes</span>
+                            <span>{pct}%</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4 text-center">{t.total_faults}</td>
+                      <td className="p-4 text-center">
+                        {t.finished_at
+                          ? <span className="text-success">✅ Terminé</span>
+                          : <span className="text-muted-foreground">⏳ En cours</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
                 {teams.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="p-8 text-center text-muted-foreground">
-                      Aucune équipe inscrite pour le moment.
-                    </td>
-                  </tr>
+                  <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">Aucune équipe inscrite pour le moment.</td></tr>
                 )}
               </tbody>
             </table>

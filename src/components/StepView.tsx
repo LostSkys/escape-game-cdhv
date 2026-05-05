@@ -4,12 +4,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { CheckCircle2, DoorOpen, HelpCircle, Lightbulb, Puzzle, X } from "lucide-react";
+import {
+  CheckCircle2,
+  DoorOpen,
+  Footprints,
+  HelpCircle,
+  Lightbulb,
+  ListChecks,
+  Puzzle,
+  X,
+} from "lucide-react";
+import CountdownHint from "./CountdownHint";
 
 export type Step = {
   id: string;
   step_order: number;
-  type: "question" | "enigme" | "minijeu" | "salle";
+  type: "question" | "enigme" | "minijeu" | "salle" | "physique" | "composee";
   title: string;
   content: any;
   hint: string;
@@ -23,11 +33,22 @@ type Props = {
   alreadyCompleted: boolean;
 };
 
-const typeMeta = {
+const typeMeta: Record<Step["type"], { icon: any; label: string; color: string }> = {
   question: { icon: HelpCircle, label: "Question", color: "text-accent" },
   enigme: { icon: Lightbulb, label: "Énigme", color: "text-primary" },
   minijeu: { icon: Puzzle, label: "Minijeu", color: "text-success" },
   salle: { icon: DoorOpen, label: "Accès salle", color: "text-gold" },
+  physique: { icon: Footprints, label: "Action physique", color: "text-accent" },
+  composee: { icon: ListChecks, label: "Étape composée", color: "text-primary" },
+};
+
+const placeholderFor = (type: Step["type"]) => {
+  switch (type) {
+    case "question": return "Entrez votre réponse ici...";
+    case "enigme": return "Le mot que vous avez deviné...";
+    case "physique": return "Réponse trouvée sur place...";
+    default: return "Votre réponse...";
+  }
 };
 
 const StepView = ({ step, teamId, onCompleted, onCancel, alreadyCompleted }: Props) => {
@@ -59,7 +80,9 @@ const StepView = ({ step, teamId, onCompleted, onCancel, alreadyCompleted }: Pro
       {step.type === "salle" && <SalleView step={step} teamId={teamId} onCompleted={onCompleted} />}
       {step.type === "question" && <AnswerView step={step} teamId={teamId} onCompleted={onCompleted} />}
       {step.type === "enigme" && <AnswerView step={step} teamId={teamId} onCompleted={onCompleted} isRiddle />}
+      {step.type === "physique" && <AnswerView step={step} teamId={teamId} onCompleted={onCompleted} isPhysical />}
       {step.type === "minijeu" && <MiniGameView step={step} teamId={teamId} onCompleted={onCompleted} />}
+      {step.type === "composee" && <CompositeView step={step} teamId={teamId} onCompleted={onCompleted} />}
     </div>
   );
 };
@@ -72,19 +95,14 @@ const SalleView = ({ step, teamId, onCompleted }: { step: Step; teamId: string; 
     setLoading(true);
     const { error } = await supabase.rpc("complete_room_step", { p_team_id: teamId, p_step_id: step.id });
     setLoading(false);
-    if (error) {
-      toast.error("Erreur");
-      return;
-    }
+    if (error) { toast.error("Erreur"); return; }
     toast.success("Accès enregistré !");
     onCompleted();
   };
 
   return (
     <div className="space-y-4">
-      <div className="bg-gold/10 border border-gold/30 rounded-lg p-5 text-base">
-        🚪 {message}
-      </div>
+      <div className="bg-gold/10 border border-gold/30 rounded-lg p-5 text-base">🚪 {message}</div>
       <div className="text-sm text-muted-foreground border-l-2 border-primary/40 pl-3">
         💡 Indice pour la suite : <span className="text-foreground">{step.hint}</span>
       </div>
@@ -96,35 +114,24 @@ const SalleView = ({ step, teamId, onCompleted }: { step: Step; teamId: string; 
 };
 
 const AnswerView = ({
-  step,
-  teamId,
-  onCompleted,
-  isRiddle,
+  step, teamId, onCompleted, isRiddle, isPhysical,
 }: {
-  step: Step;
-  teamId: string;
-  onCompleted: () => void;
-  isRiddle?: boolean;
+  step: Step; teamId: string; onCompleted: () => void; isRiddle?: boolean; isPhysical?: boolean;
 }) => {
   const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ correct: boolean; hint: string } | null>(null);
-  const prompt = isRiddle ? step.content?.riddle : step.content?.question;
+  const prompt = isRiddle ? step.content?.riddle : isPhysical ? step.content?.instruction : step.content?.question;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!answer.trim()) return;
     setLoading(true);
     const { data, error } = await supabase.rpc("validate_step_answer", {
-      p_team_id: teamId,
-      p_step_id: step.id,
-      p_answer: answer,
+      p_team_id: teamId, p_step_id: step.id, p_answer: answer,
     });
     setLoading(false);
-    if (error) {
-      toast.error("Erreur");
-      return;
-    }
+    if (error) { toast.error("Erreur"); return; }
     const r = data as { correct: boolean; hint: string };
     setResult(r);
     if (r.correct) toast.success("Bonne réponse !");
@@ -133,19 +140,28 @@ const AnswerView = ({
 
   return (
     <div className="space-y-4">
-      <p className="text-lg leading-relaxed">{prompt}</p>
+      {isPhysical ? (
+        <div className="bg-accent/10 border border-accent/30 rounded-lg p-4 text-base">
+          <span className="font-semibold text-accent">📍 Mission terrain : </span>
+          {prompt}
+        </div>
+      ) : (
+        <p className="text-lg leading-relaxed">{prompt}</p>
+      )}
 
-      {!result?.correct ? (
+      {!result ? (
         <form onSubmit={handleSubmit} className="space-y-3">
           <Label htmlFor="answer">Votre réponse</Label>
           <Input
             id="answer"
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
+            placeholder={placeholderFor(step.type)}
             className="h-12 text-base"
             autoComplete="off"
             disabled={loading}
           />
+          <CountdownHint hint={step.hint} storageKey={`step-${step.id}`} />
           <Button type="submit" className="w-full" size="lg" disabled={loading || !answer.trim()}>
             {loading ? "Validation..." : "Valider"}
           </Button>
@@ -153,41 +169,170 @@ const AnswerView = ({
       ) : null}
 
       {result && (
-        <div
-          className={`rounded-lg p-4 border ${
-            result.correct
-              ? "bg-success/10 border-success/30 text-success"
+        <>
+          <div className={`rounded-lg p-4 border ${
+            result.correct ? "bg-success/10 border-success/30 text-success"
               : "bg-destructive/10 border-destructive/30 text-destructive"
-          }`}
-        >
-          {result.correct ? "✅ Bonne réponse !" : "❌ Mauvaise réponse, mais voici l'indice pour avancer :"}
-        </div>
+          }`}>
+            {result.correct ? "✅ Bonne réponse !" : "❌ Mauvaise réponse, mais voici l'indice pour avancer :"}
+          </div>
+          <div className="text-sm text-muted-foreground border-l-2 border-primary/40 pl-3">
+            💡 Indice : <span className="text-foreground">{result.hint}</span>
+          </div>
+          <Button onClick={onCompleted} variant="secondary" className="w-full">Continuer</Button>
+        </>
       )}
+    </div>
+  );
+};
 
-      {result && (
+type Sub = {
+  kind: "quiz" | "input" | "enigme";
+  question: string;
+  options?: string[];
+  answer: string;
+  hint: string;
+};
+
+const CompositeView = ({ step, teamId, onCompleted }: { step: Step; teamId: string; onCompleted: () => void }) => {
+  const subs: Sub[] = step.content?.subs ?? [];
+  const intro: string = step.content?.intro ?? "";
+  const [index, setIndex] = useState(0);
+  const [input, setInput] = useState("");
+  const [picked, setPicked] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [feedback, setFeedback] = useState<{ correct: boolean; expected: string; hint: string } | null>(null);
+  const [finalLoading, setFinalLoading] = useState(false);
+  const [finalHint, setFinalHint] = useState<string | null>(null);
+
+  const sub = subs[index];
+  const isLast = index === subs.length - 1;
+
+  const submit = async () => {
+    const ans = sub.kind === "quiz" ? (picked ?? "") : input;
+    if (!ans.trim()) return;
+    setLoading(true);
+    const { data, error } = await supabase.rpc("validate_substep", {
+      p_team_id: teamId, p_step_id: step.id, p_sub_index: index, p_answer: ans,
+    });
+    setLoading(false);
+    if (error) { toast.error("Erreur"); return; }
+    const r = data as { correct: boolean; expected: string; hint: string };
+    setFeedback(r);
+    if (r.correct) toast.success("Bonne réponse !");
+    else toast.error("Faute comptabilisée");
+  };
+
+  const next = async () => {
+    setFeedback(null);
+    setInput("");
+    setPicked(null);
+    if (!isLast) {
+      setIndex(index + 1);
+    } else {
+      setFinalLoading(true);
+      const { data, error } = await supabase.rpc("complete_composite_step", {
+        p_team_id: teamId, p_step_id: step.id,
+      });
+      setFinalLoading(false);
+      if (error) { toast.error("Erreur"); return; }
+      setFinalHint((data as any)?.hint ?? step.hint);
+    }
+  };
+
+  if (finalHint) {
+    return (
+      <div className="space-y-4">
+        <div className="bg-success/10 border border-success/30 rounded-lg p-4 text-success">
+          🎉 Étape composée terminée !
+        </div>
         <div className="text-sm text-muted-foreground border-l-2 border-primary/40 pl-3">
-          💡 Indice : <span className="text-foreground">{result.hint}</span>
+          💡 Indice menant à la salle suivante : <span className="text-foreground">{finalHint}</span>
         </div>
+        <Button onClick={onCompleted} variant="secondary" className="w-full">Continuer</Button>
+      </div>
+    );
+  }
+
+  if (!sub) return null;
+
+  return (
+    <div className="space-y-4">
+      {intro && <p className="text-sm text-muted-foreground italic">{intro}</p>}
+      <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-primary font-semibold">
+        Sous-étape {index + 1} / {subs.length}
+        <span className="text-muted-foreground normal-case font-normal">· {sub.kind}</span>
+      </div>
+
+      <p className="text-lg font-medium">{sub.question}</p>
+
+      {!feedback && (
+        <>
+          {sub.kind === "quiz" ? (
+            <div className="grid grid-cols-2 gap-2">
+              {(sub.options ?? []).map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => setPicked(opt)}
+                  className={`px-4 py-3 rounded-lg border text-sm transition-smooth text-left ${
+                    picked === opt ? "bg-primary/15 border-primary" : "bg-secondary border-border hover:border-primary/50"
+                  }`}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={sub.kind === "enigme" ? "Le mot que vous avez deviné..." : "Entrez votre réponse..."}
+              className="h-12 text-base"
+              autoComplete="off"
+            />
+          )}
+
+          <CountdownHint hint={sub.hint} storageKey={`sub-${step.id}-${index}`} />
+
+          <Button
+            onClick={submit}
+            className="w-full"
+            size="lg"
+            disabled={loading || (sub.kind === "quiz" ? !picked : !input.trim())}
+          >
+            {loading ? "Validation..." : "Valider"}
+          </Button>
+        </>
       )}
 
-      {result && (
-        <Button onClick={onCompleted} variant="secondary" className="w-full">
-          Continuer
-        </Button>
+      {feedback && (
+        <>
+          <div className={`rounded-lg p-4 border ${
+            feedback.correct ? "bg-success/10 border-success/30 text-success"
+              : "bg-destructive/10 border-destructive/30 text-destructive"
+          }`}>
+            {feedback.correct
+              ? "✅ Bonne réponse !"
+              : <>❌ Mauvaise réponse — la bonne était : <strong>{feedback.expected}</strong></>}
+          </div>
+          {feedback.hint && (
+            <div className="text-sm text-muted-foreground border-l-2 border-primary/40 pl-3">
+              💡 {feedback.hint}
+            </div>
+          )}
+          <Button onClick={next} variant="secondary" className="w-full" disabled={finalLoading}>
+            {isLast ? (finalLoading ? "Finalisation..." : "Terminer cette étape") : "Sous-étape suivante"}
+          </Button>
+        </>
       )}
     </div>
   );
 };
 
 const MiniGameView = ({
-  step,
-  teamId,
-  onCompleted,
-}: {
-  step: Step;
-  teamId: string;
-  onCompleted: () => void;
-}) => {
+  step, teamId, onCompleted,
+}: { step: Step; teamId: string; onCompleted: () => void }) => {
   const questions: { q: string; options: string[]; answer: string }[] = step.content?.questions ?? [];
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [submitted, setSubmitted] = useState(false);
@@ -200,27 +345,18 @@ const MiniGameView = ({
   const handleSubmit = async () => {
     setSubmitted(true);
     setLoading(true);
-    // On envoie "gagne" si tout est juste, sinon "rate" pour incrémenter les fautes
     const { error } = await supabase.rpc("validate_step_answer", {
-      p_team_id: teamId,
-      p_step_id: step.id,
-      p_answer: allCorrect ? "gagne" : "rate",
+      p_team_id: teamId, p_step_id: step.id, p_answer: allCorrect ? "gagne" : "rate",
     });
     setLoading(false);
-    if (error) {
-      toast.error("Erreur");
-      return;
-    }
+    if (error) { toast.error("Erreur"); return; }
     if (allCorrect) toast.success(`Parfait ! ${correctCount}/${questions.length}`);
     else toast.error(`${correctCount}/${questions.length} — réessayez ou continuez`);
   };
 
   return (
     <div className="space-y-5">
-      <p className="text-sm text-muted-foreground">
-        Répondez ensemble à toutes les questions, puis validez.
-      </p>
-
+      <p className="text-sm text-muted-foreground">Répondez ensemble à toutes les questions, puis validez.</p>
       {questions.map((q, i) => (
         <div key={i} className="space-y-2">
           <p className="font-medium">{i + 1}. {q.q}</p>
@@ -236,44 +372,33 @@ const MiniGameView = ({
                   onClick={() => !submitted && setAnswers((p) => ({ ...p, [i]: opt }))}
                   disabled={submitted}
                   className={`px-4 py-3 rounded-lg border text-sm transition-smooth text-left ${
-                    isRight
-                      ? "bg-success/20 border-success text-success"
-                      : isWrongPicked
-                      ? "bg-destructive/20 border-destructive text-destructive"
-                      : selected
-                      ? "bg-primary/20 border-primary"
-                      : "bg-secondary border-border hover:border-primary/50"
+                    isRight ? "bg-success/20 border-success text-success"
+                    : isWrongPicked ? "bg-destructive/20 border-destructive text-destructive"
+                    : selected ? "bg-primary/20 border-primary"
+                    : "bg-secondary border-border hover:border-primary/50"
                   }`}
-                >
-                  {opt}
-                </button>
+                >{opt}</button>
               );
             })}
           </div>
         </div>
       ))}
-
       {!submitted ? (
         <Button onClick={handleSubmit} disabled={!allAnswered || loading} className="w-full" size="lg">
           {loading ? "Validation..." : "Valider mes réponses"}
         </Button>
       ) : (
         <>
-          <div
-            className={`rounded-lg p-4 border ${
-              allCorrect
-                ? "bg-success/10 border-success/30 text-success"
-                : "bg-destructive/10 border-destructive/30 text-destructive"
-            }`}
-          >
+          <div className={`rounded-lg p-4 border ${
+            allCorrect ? "bg-success/10 border-success/30 text-success"
+              : "bg-destructive/10 border-destructive/30 text-destructive"
+          }`}>
             Score : {correctCount}/{questions.length} {allCorrect ? "🎉" : "— une faute a été comptabilisée"}
           </div>
           <div className="text-sm text-muted-foreground border-l-2 border-primary/40 pl-3">
             💡 Indice : <span className="text-foreground">{step.hint}</span>
           </div>
-          <Button onClick={onCompleted} className="w-full" variant="secondary">
-            Continuer
-          </Button>
+          <Button onClick={onCompleted} className="w-full" variant="secondary">Continuer</Button>
         </>
       )}
     </div>
