@@ -165,9 +165,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      complete_composite_step: {
+        Args: { p_step_id: string; p_team_id: string }
+        Returns: Json
+      }
       complete_room_step: {
         Args: { p_step_id: string; p_team_id: string }
         Returns: Json
+      }
+      find_team_by_name: {
+        Args: { p_name: string }
+        Returns: {
+          id: string
+          name: string
+          token: string
+        }[]
       }
       finish_game: { Args: { p_team_id: string }; Returns: undefined }
       get_step_by_code: {
@@ -183,6 +195,15 @@ export type Database = {
       }
       validate_step_answer: {
         Args: { p_answer: string; p_step_id: string; p_team_id: string }
+        Returns: Json
+      }
+      validate_substep: {
+        Args: {
+          p_answer: string
+          p_step_id: string
+          p_sub_index: number
+          p_team_id: string
+        }
         Returns: Json
       }
     }
