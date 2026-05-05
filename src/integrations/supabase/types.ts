@@ -187,7 +187,13 @@ export type Database = {
       }
     }
     Enums: {
-      step_type: "question" | "enigme" | "minijeu" | "salle"
+      step_type:
+        | "question"
+        | "enigme"
+        | "minijeu"
+        | "salle"
+        | "physique"
+        | "composee"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -315,7 +321,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      step_type: ["question", "enigme", "minijeu", "salle"],
+      step_type: [
+        "question",
+        "enigme",
+        "minijeu",
+        "salle",
+        "physique",
+        "composee",
+      ],
     },
   },
 } as const
