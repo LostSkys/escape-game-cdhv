@@ -1,6 +1,5 @@
-// Mot de passe admin hardcodé (à modifier selon les besoins de la CDHV)
-// Pour une vraie sécurité en prod, déplacer vers une edge function avec un secret.
-export const ADMIN_PASSWORD = "cdhv-admin-2026";
+// Mot de passe admin hardcodé — CDHV
+export const ADMIN_PASSWORD = "cdhv-admin-2026-secure";
 
 const KEY = "cdhv_admin_ok";
 

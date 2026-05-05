@@ -3,78 +3,81 @@
 @tailwind utilities;
 
 /* CDHV Escape Game — Design System
-   Tons sombres, énigmatiques, contrastes nets. Tout en HSL.
+   Charte graphique CDHV 2024 : rose #b30067, bleu/teal #87a2a3, blanc.
+   Typographies : Poppins (corps) + Simonetta (titres).
 */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Simonetta:wght@400;900&display=swap');
 
 @layer base {
   :root {
-    --background: 222 35% 9%;
-    --foreground: 40 30% 95%;
+    --background: 0 0% 100%;
+    --foreground: 222 15% 18%;
 
-    --card: 222 30% 12%;
-    --card-foreground: 40 30% 95%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 15% 18%;
 
-    --popover: 222 30% 12%;
-    --popover-foreground: 40 30% 95%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 15% 18%;
 
-    --primary: 38 92% 55%;
-    --primary-foreground: 222 40% 10%;
-    --primary-glow: 38 100% 65%;
+    /* Rose CDHV #b30067 */
+    --primary: 326 100% 35%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 326 90% 55%;
 
-    --secondary: 222 25% 18%;
-    --secondary-foreground: 40 30% 95%;
+    /* Bleu/teal secondaire #87a2a3 */
+    --secondary: 183 12% 90%;
+    --secondary-foreground: 183 15% 25%;
 
-    --muted: 222 20% 16%;
-    --muted-foreground: 220 10% 65%;
+    --muted: 183 15% 95%;
+    --muted-foreground: 222 10% 45%;
 
-    --accent: 200 85% 55%;
-    --accent-foreground: 222 40% 10%;
+    --accent: 183 12% 58%;
+    --accent-foreground: 0 0% 100%;
 
-    --success: 145 65% 45%;
+    --success: 145 55% 42%;
     --success-foreground: 0 0% 100%;
 
-    --destructive: 0 75% 55%;
+    --destructive: 0 75% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --gold: 45 95% 55%;
-    --silver: 220 8% 75%;
-    --bronze: 25 65% 50%;
+    --gold: 45 95% 50%;
+    --silver: 220 8% 70%;
+    --bronze: 25 65% 48%;
 
-    --border: 222 25% 22%;
-    --input: 222 25% 18%;
-    --ring: 38 92% 55%;
+    --border: 183 15% 88%;
+    --input: 183 15% 92%;
+    --ring: 326 100% 35%;
 
     --radius: 0.75rem;
 
-    --gradient-hero: linear-gradient(135deg, hsl(222 40% 12%) 0%, hsl(222 35% 8%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(183 25% 96%) 100%);
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-glow)) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(222 30% 14%) 0%, hsl(222 30% 11%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(183 20% 98%) 100%);
 
-    --shadow-glow: 0 0 40px hsl(var(--primary) / 0.25);
-    --shadow-elegant: 0 10px 40px -10px hsl(222 60% 4% / 0.6);
-    --shadow-card: 0 4px 20px -4px hsl(222 60% 4% / 0.5);
+    --shadow-glow: 0 0 40px hsl(var(--primary) / 0.20);
+    --shadow-elegant: 0 10px 40px -10px hsl(326 60% 30% / 0.18);
+    --shadow-card: 0 4px 20px -4px hsl(183 30% 30% / 0.12);
 
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-    --sidebar-background: 222 30% 10%;
-    --sidebar-foreground: 40 30% 95%;
-    --sidebar-primary: 38 92% 55%;
-    --sidebar-primary-foreground: 222 40% 10%;
-    --sidebar-accent: 222 25% 18%;
-    --sidebar-accent-foreground: 40 30% 95%;
-    --sidebar-border: 222 25% 22%;
-    --sidebar-ring: 38 92% 55%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 15% 18%;
+    --sidebar-primary: 326 100% 35%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 183 15% 95%;
+    --sidebar-accent-foreground: 222 15% 18%;
+    --sidebar-border: 183 15% 88%;
+    --sidebar-ring: 326 100% 35%;
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
+  * { @apply border-border; }
 
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "ss01", "cv11";
+    font-family: 'Poppins', system-ui, sans-serif;
     background-image: var(--gradient-hero);
     background-attachment: fixed;
     min-height: 100vh;
@@ -82,6 +85,8 @@
 
   h1, h2, h3 {
     @apply font-bold tracking-tight;
+    font-family: 'Simonetta', 'Poppins', serif;
+    font-weight: 900;
   }
 }
 
@@ -92,31 +97,23 @@
     background-clip: text;
     color: transparent;
   }
-
-  .glow {
-    box-shadow: var(--shadow-glow);
-  }
-
+  .glow { box-shadow: var(--shadow-glow); }
   .card-elegant {
     background: var(--gradient-card);
     box-shadow: var(--shadow-card);
     border: 1px solid hsl(var(--border));
   }
-
-  .transition-smooth {
-    transition: var(--transition-smooth);
-  }
+  .transition-smooth { transition: var(--transition-smooth); }
+  .font-display { font-family: 'Simonetta', serif; font-weight: 900; }
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px hsl(var(--primary) / 0.3); }
-  50% { box-shadow: 0 0 40px hsl(var(--primary) / 0.6); }
+  0%, 100% { box-shadow: 0 0 20px hsl(var(--primary) / 0.25); }
+  50% { box-shadow: 0 0 40px hsl(var(--primary) / 0.5); }
 }
-
 @keyframes fade-in-up {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
 .animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
 .animate-fade-in-up { animation: fade-in-up 0.5s ease-out; }
