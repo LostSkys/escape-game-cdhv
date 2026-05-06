@@ -16,6 +16,7 @@ const Jeu = () => {
   const [currentStep, setCurrentStep] = useState<Step | null>(null);
   const [loading, setLoading] = useState(false);
   const [progressMap, setProgressMap] = useState<Record<string, { faults: number; completed: boolean }>>({});
+  const [points, setPoints] = useState(0);
   const [finished, setFinished] = useState(false);
 
   useEffect(() => {

@@ -345,13 +345,14 @@ const MiniGameView = ({
   const handleSubmit = async () => {
     setSubmitted(true);
     setLoading(true);
-    const { error } = await supabase.rpc("validate_step_answer", {
-      p_team_id: teamId, p_step_id: step.id, p_answer: allCorrect ? "gagne" : "rate",
+    const wrong = questions.length - correctCount;
+    const { error } = await supabase.rpc("score_minijeu", {
+      p_team_id: teamId, p_step_id: step.id, p_correct: correctCount, p_wrong: wrong,
     });
     setLoading(false);
     if (error) { toast.error("Erreur"); return; }
-    if (allCorrect) toast.success(`Parfait ! ${correctCount}/${questions.length}`);
-    else toast.error(`${correctCount}/${questions.length} — réessayez ou continuez`);
+    if (allCorrect) toast.success(`Parfait ! ${correctCount}/${questions.length} (+${correctCount} pts)`);
+    else toast.error(`${correctCount}/${questions.length} — ${correctCount} pts gagnés, ${wrong} perdus`);
   };
 
   return (
