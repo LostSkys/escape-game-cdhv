@@ -198,6 +198,7 @@ const Admin = () => {
                   <th className="p-4 text-center">Points</th>
                   <th className="p-4 text-center">Fautes</th>
                   <th className="p-4 text-center">Statut</th>
+                  <th className="p-4 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -225,6 +226,22 @@ const Admin = () => {
                         {t.finished_at
                           ? <span className="text-success">✅ Terminé</span>
                           : <span className="text-muted-foreground">⏳ En cours</span>}
+                      </td>
+                      <td className="p-4">
+                        <div className="flex items-center justify-center gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => setEditingTeam(t)} aria-label="Modifier">
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setDeletingTeam(t)}
+                            aria-label="Supprimer"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   );
