@@ -31,8 +31,9 @@ const Jeu = () => {
 
   const checkFinished = async () => {
     if (!team) return;
-    const { data } = await supabase.from("teams").select("finished_at").eq("id", team.id).maybeSingle();
+    const { data } = await supabase.from("teams").select("finished_at, total_points").eq("id", team.id).maybeSingle();
     if (data?.finished_at) setFinished(true);
+    if (data?.total_points !== undefined && data?.total_points !== null) setPoints(data.total_points);
   };
 
   const loadProgress = async () => {
@@ -73,6 +74,7 @@ const Jeu = () => {
 
   const handleStepCompleted = async () => {
     await loadProgress();
+    await checkFinished();
     setCurrentStep(null);
   };
 
