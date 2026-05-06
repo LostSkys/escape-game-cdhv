@@ -29,7 +29,7 @@ type TeamRow = {
   started_at: string;
   finished_at: string | null;
 };
-type PlayerRow = { team_id: string; first_name: string; last_name: string };
+type PlayerRow = { id: string; team_id: string; first_name: string; last_name: string };
 
 const TOTAL_STEPS = 20;
 const REFRESH_MS = 5 * 60 * 1000; // 5 minutes
@@ -41,12 +41,26 @@ const Admin = () => {
   const [players, setPlayers] = useState<PlayerRow[]>([]);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [refreshing, setRefreshing] = useState(false);
+  const [editingTeam, setEditingTeam] = useState<TeamRow | null>(null);
+  const [deletingTeam, setDeletingTeam] = useState<TeamRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!deletingTeam) return;
+    setDeleting(true);
+    const { error } = await supabase.rpc("delete_team", { p_team_id: deletingTeam.id });
+    setDeleting(false);
+    if (error) { toast.error("Erreur de suppression"); return; }
+    toast.success(`Équipe "${deletingTeam.name}" supprimée`);
+    setDeletingTeam(null);
+    load();
+  };
 
   const load = async () => {
     setRefreshing(true);
     const [teamsRes, playersRes] = await Promise.all([
       supabase.from("teams").select("id, name, current_step, total_faults, total_points, started_at, finished_at"),
-      supabase.from("players").select("team_id, first_name, last_name"),
+      supabase.from("players").select("id, team_id, first_name, last_name"),
     ]);
     if (teamsRes.data) setTeams(teamsRes.data);
     if (playersRes.data) setPlayers(playersRes.data);
