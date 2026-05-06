@@ -7,7 +7,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { ArrowLeft, LogOut, Medal, RefreshCw, Trophy, Users } from "lucide-react";
+import { ArrowLeft, LogOut, Medal, Pencil, RefreshCw, Trash2, Trophy, Users } from "lucide-react";
+import EditTeamDialog from "@/components/EditTeamDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type TeamRow = {
   id: string;
