@@ -16,6 +16,7 @@ const Jeu = () => {
   const [currentStep, setCurrentStep] = useState<Step | null>(null);
   const [loading, setLoading] = useState(false);
   const [progressMap, setProgressMap] = useState<Record<string, { faults: number; completed: boolean }>>({});
+  const [points, setPoints] = useState(0);
   const [finished, setFinished] = useState(false);
 
   useEffect(() => {
@@ -30,8 +31,9 @@ const Jeu = () => {
 
   const checkFinished = async () => {
     if (!team) return;
-    const { data } = await supabase.from("teams").select("finished_at").eq("id", team.id).maybeSingle();
+    const { data } = await supabase.from("teams").select("finished_at, total_points").eq("id", team.id).maybeSingle();
     if (data?.finished_at) setFinished(true);
+    if (data?.total_points !== undefined && data?.total_points !== null) setPoints(data.total_points);
   };
 
   const loadProgress = async () => {
@@ -72,6 +74,7 @@ const Jeu = () => {
 
   const handleStepCompleted = async () => {
     await loadProgress();
+    await checkFinished();
     setCurrentStep(null);
   };
 
@@ -107,7 +110,8 @@ const Jeu = () => {
         <header className="mb-8 space-y-2">
           <p className="text-xs uppercase tracking-[0.3em] text-primary font-semibold">Équipe</p>
           <h1 className="text-4xl font-extrabold">{team.name}</h1>
-          <div className="flex gap-6 text-sm text-muted-foreground pt-2">
+          <div className="flex flex-wrap gap-6 text-sm text-muted-foreground pt-2">
+            <span className="text-primary font-bold">⭐ {points} point{Math.abs(points) > 1 ? "s" : ""}</span>
             <span>✅ {completedCount} étape{completedCount > 1 ? "s" : ""} validée{completedCount > 1 ? "s" : ""}</span>
             <span>❌ {totalFaults} faute{totalFaults > 1 ? "s" : ""}</span>
           </div>

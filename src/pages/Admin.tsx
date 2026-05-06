@@ -14,6 +14,7 @@ type TeamRow = {
   name: string;
   current_step: number;
   total_faults: number;
+  total_points: number;
   started_at: string;
   finished_at: string | null;
 };
@@ -33,7 +34,7 @@ const Admin = () => {
   const load = async () => {
     setRefreshing(true);
     const [teamsRes, playersRes] = await Promise.all([
-      supabase.from("teams").select("id, name, current_step, total_faults, started_at, finished_at"),
+      supabase.from("teams").select("id, name, current_step, total_faults, total_points, started_at, finished_at"),
       supabase.from("players").select("team_id, first_name, last_name"),
     ]);
     if (teamsRes.data) setTeams(teamsRes.data);
@@ -77,16 +78,18 @@ const Admin = () => {
   }
 
   const sorted = [...teams].sort((a, b) => {
+    // Tri principal : points (décroissant)
+    if (a.total_points !== b.total_points) return b.total_points - a.total_points;
+    // En cas d'égalité, le premier à avoir terminé l'emporte
     if (a.finished_at && b.finished_at) {
-      if (a.total_faults !== b.total_faults) return a.total_faults - b.total_faults;
       return new Date(a.finished_at).getTime() - new Date(b.finished_at).getTime();
     }
     if (a.finished_at) return -1;
     if (b.finished_at) return 1;
-    if (a.current_step !== b.current_step) return b.current_step - a.current_step;
-    return a.total_faults - b.total_faults;
+    return b.current_step - a.current_step;
   });
 
+  // Podium = top 3 du classement par points (parmi les équipes ayant terminé)
   const finishedTeams = sorted.filter((t) => t.finished_at);
   const playersByTeam = players.reduce<Record<string, PlayerRow[]>>((acc, p) => {
     (acc[p.team_id] ||= []).push(p); return acc;
@@ -132,7 +135,8 @@ const Admin = () => {
                     <Medal className={`h-12 w-12 mx-auto ${colors[i]}`} />
                     <p className="text-xs uppercase tracking-wider text-muted-foreground">{labels[i]}</p>
                     <h3 className="text-xl font-bold">{t.name}</h3>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-primary font-semibold">⭐ {t.total_points} pts</p>
+                    <p className="text-xs text-muted-foreground">
                       {t.total_faults} faute{t.total_faults > 1 ? "s" : ""}
                     </p>
                   </div>
@@ -146,7 +150,7 @@ const Admin = () => {
                   {finishedTeams.slice(3).map((t, i) => (
                     <li key={t.id} className="flex justify-between">
                       <span>{i + 4}. {t.name}</span>
-                      <span className="text-muted-foreground">{t.total_faults} faute{t.total_faults > 1 ? "s" : ""}</span>
+                      <span className="text-muted-foreground">⭐ {t.total_points} pts · {t.total_faults} faute{t.total_faults > 1 ? "s" : ""}</span>
                     </li>
                   ))}
                 </ul>
@@ -166,6 +170,7 @@ const Admin = () => {
                   <th className="p-4">Équipe</th>
                   <th className="p-4">Joueurs</th>
                   <th className="p-4 w-64">Progression</th>
+                  <th className="p-4 text-center">Points</th>
                   <th className="p-4 text-center">Fautes</th>
                   <th className="p-4 text-center">Statut</th>
                 </tr>
@@ -189,6 +194,7 @@ const Admin = () => {
                           </div>
                         </div>
                       </td>
+                      <td className="p-4 text-center font-bold text-primary">{t.total_points}</td>
                       <td className="p-4 text-center">{t.total_faults}</td>
                       <td className="p-4 text-center">
                         {t.finished_at
@@ -199,7 +205,7 @@ const Admin = () => {
                   );
                 })}
                 {teams.length === 0 && (
-                  <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">Aucune équipe inscrite pour le moment.</td></tr>
+                  <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">Aucune équipe inscrite pour le moment.</td></tr>
                 )}
               </tbody>
             </table>

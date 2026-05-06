@@ -137,6 +137,7 @@ export type Database = {
           started_at: string
           token: string
           total_faults: number
+          total_points: number
         }
         Insert: {
           created_at?: string
@@ -147,6 +148,7 @@ export type Database = {
           started_at?: string
           token?: string
           total_faults?: number
+          total_points?: number
         }
         Update: {
           created_at?: string
@@ -157,6 +159,7 @@ export type Database = {
           started_at?: string
           token?: string
           total_faults?: number
+          total_points?: number
         }
         Relationships: []
       }
@@ -192,6 +195,15 @@ export type Database = {
           title: string
           type: Database["public"]["Enums"]["step_type"]
         }[]
+      }
+      score_minijeu: {
+        Args: {
+          p_correct: number
+          p_step_id: string
+          p_team_id: string
+          p_wrong: number
+        }
+        Returns: Json
       }
       validate_step_answer: {
         Args: { p_answer: string; p_step_id: string; p_team_id: string }

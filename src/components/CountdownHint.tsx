@@ -9,7 +9,7 @@ type Props = {
 };
 
 /** Affiche un compte à rebours (90s par défaut) puis révèle l'indice. */
-const CountdownHint = ({ hint, seconds = 90, storageKey }: Props) => {
+const CountdownHint = ({ hint, seconds = 300, storageKey }: Props) => {
   const [remaining, setRemaining] = useState(seconds);
   const [revealed, setRevealed] = useState(false);
 
@@ -46,7 +46,7 @@ const CountdownHint = ({ hint, seconds = 90, storageKey }: Props) => {
     <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground bg-secondary/40 rounded-lg px-3 py-2">
       <span className="flex items-center gap-2">
         <Timer className="h-4 w-4" />
-        Indice débloqué dans {remaining}s
+        Indice débloqué dans {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}
       </span>
       <Button type="button" variant="ghost" size="sm" onClick={() => setRevealed(true)}>
         Révéler l'indice
