@@ -176,6 +176,7 @@ export type Database = {
         Args: { p_step_id: string; p_team_id: string }
         Returns: Json
       }
+      delete_team: { Args: { p_team_id: string }; Returns: undefined }
       find_team_by_name: {
         Args: { p_name: string }
         Returns: {

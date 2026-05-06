@@ -7,7 +7,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { ArrowLeft, LogOut, Medal, RefreshCw, Trophy, Users } from "lucide-react";
+import { ArrowLeft, LogOut, Medal, Pencil, RefreshCw, Trash2, Trophy, Users } from "lucide-react";
+import EditTeamDialog from "@/components/EditTeamDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type TeamRow = {
   id: string;
@@ -18,7 +29,7 @@ type TeamRow = {
   started_at: string;
   finished_at: string | null;
 };
-type PlayerRow = { team_id: string; first_name: string; last_name: string };
+type PlayerRow = { id: string; team_id: string; first_name: string; last_name: string };
 
 const TOTAL_STEPS = 20;
 const REFRESH_MS = 5 * 60 * 1000; // 5 minutes
@@ -30,12 +41,26 @@ const Admin = () => {
   const [players, setPlayers] = useState<PlayerRow[]>([]);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [refreshing, setRefreshing] = useState(false);
+  const [editingTeam, setEditingTeam] = useState<TeamRow | null>(null);
+  const [deletingTeam, setDeletingTeam] = useState<TeamRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!deletingTeam) return;
+    setDeleting(true);
+    const { error } = await supabase.rpc("delete_team", { p_team_id: deletingTeam.id });
+    setDeleting(false);
+    if (error) { toast.error("Erreur de suppression"); return; }
+    toast.success(`Équipe "${deletingTeam.name}" supprimée`);
+    setDeletingTeam(null);
+    load();
+  };
 
   const load = async () => {
     setRefreshing(true);
     const [teamsRes, playersRes] = await Promise.all([
       supabase.from("teams").select("id, name, current_step, total_faults, total_points, started_at, finished_at"),
-      supabase.from("players").select("team_id, first_name, last_name"),
+      supabase.from("players").select("id, team_id, first_name, last_name"),
     ]);
     if (teamsRes.data) setTeams(teamsRes.data);
     if (playersRes.data) setPlayers(playersRes.data);
@@ -173,6 +198,7 @@ const Admin = () => {
                   <th className="p-4 text-center">Points</th>
                   <th className="p-4 text-center">Fautes</th>
                   <th className="p-4 text-center">Statut</th>
+                  <th className="p-4 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -201,17 +227,62 @@ const Admin = () => {
                           ? <span className="text-success">✅ Terminé</span>
                           : <span className="text-muted-foreground">⏳ En cours</span>}
                       </td>
+                      <td className="p-4">
+                        <div className="flex items-center justify-center gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => setEditingTeam(t)} aria-label="Modifier">
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setDeletingTeam(t)}
+                            aria-label="Supprimer"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
                 {teams.length === 0 && (
-                  <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">Aucune équipe inscrite pour le moment.</td></tr>
+                  <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Aucune équipe inscrite pour le moment.</td></tr>
                 )}
               </tbody>
             </table>
           </div>
         </section>
       </div>
+
+      <EditTeamDialog
+        open={!!editingTeam}
+        onOpenChange={(o) => !o && setEditingTeam(null)}
+        team={editingTeam}
+        players={editingTeam ? (playersByTeam[editingTeam.id] ?? []) : []}
+        onSaved={load}
+      />
+
+      <AlertDialog open={!!deletingTeam} onOpenChange={(o) => !o && setDeletingTeam(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer cette équipe ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              L'équipe <strong>{deletingTeam?.name}</strong>, ses joueurs et toute sa progression seront définitivement supprimés. Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Suppression..." : "Supprimer"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 };
