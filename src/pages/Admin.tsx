@@ -247,13 +247,42 @@ const Admin = () => {
                   );
                 })}
                 {teams.length === 0 && (
-                  <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">Aucune équipe inscrite pour le moment.</td></tr>
+                  <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Aucune équipe inscrite pour le moment.</td></tr>
                 )}
               </tbody>
             </table>
           </div>
         </section>
       </div>
+
+      <EditTeamDialog
+        open={!!editingTeam}
+        onOpenChange={(o) => !o && setEditingTeam(null)}
+        team={editingTeam}
+        players={editingTeam ? (playersByTeam[editingTeam.id] ?? []) : []}
+        onSaved={load}
+      />
+
+      <AlertDialog open={!!deletingTeam} onOpenChange={(o) => !o && setDeletingTeam(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer cette équipe ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              L'équipe <strong>{deletingTeam?.name}</strong>, ses joueurs et toute sa progression seront définitivement supprimés. Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Suppression..." : "Supprimer"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 };
