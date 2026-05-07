@@ -28,6 +28,7 @@ export type Step = {
 type Props = {
   step: Step;
   teamId: string;
+  teamToken: string;
   onCompleted: () => void;
   onCancel: () => void;
   alreadyCompleted: boolean;
@@ -51,7 +52,7 @@ const placeholderFor = (type: Step["type"]) => {
   }
 };
 
-const StepView = ({ step, teamId, onCompleted, onCancel, alreadyCompleted }: Props) => {
+const StepView = ({ step, teamId, teamToken, onCompleted, onCancel, alreadyCompleted }: Props) => {
   const meta = typeMeta[step.type];
   const Icon = meta.icon;
 
@@ -77,23 +78,25 @@ const StepView = ({ step, teamId, onCompleted, onCancel, alreadyCompleted }: Pro
         </div>
       )}
 
-      {step.type === "salle" && <SalleView step={step} teamId={teamId} onCompleted={onCompleted} />}
-      {step.type === "question" && <AnswerView step={step} teamId={teamId} onCompleted={onCompleted} />}
-      {step.type === "enigme" && <AnswerView step={step} teamId={teamId} onCompleted={onCompleted} isRiddle />}
-      {step.type === "physique" && <AnswerView step={step} teamId={teamId} onCompleted={onCompleted} isPhysical />}
-      {step.type === "minijeu" && <MiniGameView step={step} teamId={teamId} onCompleted={onCompleted} />}
-      {step.type === "composee" && <CompositeView step={step} teamId={teamId} onCompleted={onCompleted} />}
+      {step.type === "salle" && <SalleView step={step} teamId={teamId} teamToken={teamToken} onCompleted={onCompleted} />}
+      {step.type === "question" && <AnswerView step={step} teamId={teamId} teamToken={teamToken} onCompleted={onCompleted} />}
+      {step.type === "enigme" && <AnswerView step={step} teamId={teamId} teamToken={teamToken} onCompleted={onCompleted} isRiddle />}
+      {step.type === "physique" && <AnswerView step={step} teamId={teamId} teamToken={teamToken} onCompleted={onCompleted} isPhysical />}
+      {step.type === "minijeu" && <MiniGameView step={step} teamId={teamId} teamToken={teamToken} onCompleted={onCompleted} />}
+      {step.type === "composee" && <CompositeView step={step} teamId={teamId} teamToken={teamToken} onCompleted={onCompleted} />}
     </div>
   );
 };
 
-const SalleView = ({ step, teamId, onCompleted }: { step: Step; teamId: string; onCompleted: () => void }) => {
+type GameProps = { step: Step; teamId: string; teamToken: string; onCompleted: () => void };
+
+const SalleView = ({ step, teamId, teamToken, onCompleted }: GameProps) => {
   const [loading, setLoading] = useState(false);
   const message = step.content?.message ?? "Vous pouvez accéder à cette salle.";
 
   const handleConfirm = async () => {
     setLoading(true);
-    const { error } = await supabase.rpc("complete_room_step", { p_team_id: teamId, p_step_id: step.id });
+    const { error } = await supabase.rpc("complete_room_step", { p_team_id: teamId, p_token: teamToken, p_step_id: step.id });
     setLoading(false);
     if (error) { toast.error("Erreur"); return; }
     toast.success("Accès enregistré !");
@@ -114,10 +117,8 @@ const SalleView = ({ step, teamId, onCompleted }: { step: Step; teamId: string; 
 };
 
 const AnswerView = ({
-  step, teamId, onCompleted, isRiddle, isPhysical,
-}: {
-  step: Step; teamId: string; onCompleted: () => void; isRiddle?: boolean; isPhysical?: boolean;
-}) => {
+  step, teamId, teamToken, onCompleted, isRiddle, isPhysical,
+}: GameProps & { isRiddle?: boolean; isPhysical?: boolean }) => {
   const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ correct: boolean; hint: string } | null>(null);
@@ -128,7 +129,7 @@ const AnswerView = ({
     if (!answer.trim()) return;
     setLoading(true);
     const { data, error } = await supabase.rpc("validate_step_answer", {
-      p_team_id: teamId, p_step_id: step.id, p_answer: answer,
+      p_team_id: teamId, p_token: teamToken, p_step_id: step.id, p_answer: answer,
     });
     setLoading(false);
     if (error) { toast.error("Erreur"); return; }
@@ -190,11 +191,10 @@ type Sub = {
   kind: "quiz" | "input" | "enigme";
   question: string;
   options?: string[];
-  answer: string;
   hint: string;
 };
 
-const CompositeView = ({ step, teamId, onCompleted }: { step: Step; teamId: string; onCompleted: () => void }) => {
+const CompositeView = ({ step, teamId, teamToken, onCompleted }: GameProps) => {
   const subs: Sub[] = step.content?.subs ?? [];
   const intro: string = step.content?.intro ?? "";
   const [index, setIndex] = useState(0);
@@ -213,7 +213,7 @@ const CompositeView = ({ step, teamId, onCompleted }: { step: Step; teamId: stri
     if (!ans.trim()) return;
     setLoading(true);
     const { data, error } = await supabase.rpc("validate_substep", {
-      p_team_id: teamId, p_step_id: step.id, p_sub_index: index, p_answer: ans,
+      p_team_id: teamId, p_token: teamToken, p_step_id: step.id, p_sub_index: index, p_answer: ans,
     });
     setLoading(false);
     if (error) { toast.error("Erreur"); return; }
@@ -232,7 +232,7 @@ const CompositeView = ({ step, teamId, onCompleted }: { step: Step; teamId: stri
     } else {
       setFinalLoading(true);
       const { data, error } = await supabase.rpc("complete_composite_step", {
-        p_team_id: teamId, p_step_id: step.id,
+        p_team_id: teamId, p_token: teamToken, p_step_id: step.id,
       });
       setFinalLoading(false);
       if (error) { toast.error("Erreur"); return; }
@@ -330,29 +330,28 @@ const CompositeView = ({ step, teamId, onCompleted }: { step: Step; teamId: stri
   );
 };
 
-const MiniGameView = ({
-  step, teamId, onCompleted,
-}: { step: Step; teamId: string; onCompleted: () => void }) => {
-  const questions: { q: string; options: string[]; answer: string }[] = step.content?.questions ?? [];
+const MiniGameView = ({ step, teamId, teamToken, onCompleted }: GameProps) => {
+  // Le contenu envoyé par le serveur ne contient PLUS les bonnes réponses.
+  const questions: { q: string; options: string[] }[] = step.content?.questions ?? [];
   const [answers, setAnswers] = useState<Record<number, string>>({});
-  const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<{ correct: number; wrong: number; total: number; hint: string; results: { answer: string }[] } | null>(null);
 
   const allAnswered = questions.every((_, i) => answers[i]);
-  const correctCount = questions.filter((q, i) => answers[i] === q.answer).length;
-  const allCorrect = correctCount === questions.length && questions.length > 0;
 
   const handleSubmit = async () => {
-    setSubmitted(true);
     setLoading(true);
-    const wrong = questions.length - correctCount;
-    const { error } = await supabase.rpc("score_minijeu", {
-      p_team_id: teamId, p_step_id: step.id, p_correct: correctCount, p_wrong: wrong,
+    const payload: Record<number, string> = {};
+    questions.forEach((_, i) => { payload[i] = answers[i]; });
+    const { data, error } = await supabase.rpc("validate_minijeu", {
+      p_team_id: teamId, p_token: teamToken, p_step_id: step.id, p_answers: payload as any,
     });
     setLoading(false);
     if (error) { toast.error("Erreur"); return; }
-    if (allCorrect) toast.success(`Parfait ! ${correctCount}/${questions.length} (+${correctCount} pts)`);
-    else toast.error(`${correctCount}/${questions.length} — ${correctCount} pts gagnés, ${wrong} perdus`);
+    const r = data as any;
+    setResult(r);
+    if (r.wrong === 0) toast.success(`Parfait ! ${r.correct}/${r.total} (+${r.correct} pts)`);
+    else toast.error(`${r.correct}/${r.total} — ${r.correct} pts gagnés, ${r.wrong} perdus`);
   };
 
   return (
@@ -364,14 +363,15 @@ const MiniGameView = ({
           <div className="grid grid-cols-2 gap-2">
             {q.options.map((opt) => {
               const selected = answers[i] === opt;
-              const isRight = submitted && opt === q.answer;
-              const isWrongPicked = submitted && selected && opt !== q.answer;
+              const correctAnswer = result?.results?.[i]?.answer;
+              const isRight = result && opt === correctAnswer;
+              const isWrongPicked = result && selected && opt !== correctAnswer;
               return (
                 <button
                   key={opt}
                   type="button"
-                  onClick={() => !submitted && setAnswers((p) => ({ ...p, [i]: opt }))}
-                  disabled={submitted}
+                  onClick={() => !result && setAnswers((p) => ({ ...p, [i]: opt }))}
+                  disabled={!!result}
                   className={`px-4 py-3 rounded-lg border text-sm transition-smooth text-left ${
                     isRight ? "bg-success/20 border-success text-success"
                     : isWrongPicked ? "bg-destructive/20 border-destructive text-destructive"
@@ -384,20 +384,20 @@ const MiniGameView = ({
           </div>
         </div>
       ))}
-      {!submitted ? (
+      {!result ? (
         <Button onClick={handleSubmit} disabled={!allAnswered || loading} className="w-full" size="lg">
           {loading ? "Validation..." : "Valider mes réponses"}
         </Button>
       ) : (
         <>
           <div className={`rounded-lg p-4 border ${
-            allCorrect ? "bg-success/10 border-success/30 text-success"
+            result.wrong === 0 ? "bg-success/10 border-success/30 text-success"
               : "bg-destructive/10 border-destructive/30 text-destructive"
           }`}>
-            Score : {correctCount}/{questions.length} {allCorrect ? "🎉" : "— une faute a été comptabilisée"}
+            Score : {result.correct}/{result.total} {result.wrong === 0 ? "🎉" : `— ${result.wrong} faute${result.wrong > 1 ? "s" : ""}`}
           </div>
           <div className="text-sm text-muted-foreground border-l-2 border-primary/40 pl-3">
-            💡 Indice : <span className="text-foreground">{step.hint}</span>
+            💡 Indice : <span className="text-foreground">{result.hint}</span>
           </div>
           <Button onClick={onCompleted} className="w-full" variant="secondary">Continuer</Button>
         </>
