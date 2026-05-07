@@ -111,7 +111,7 @@ const Admin = () => {
             <Input id="pwd" type="password" value={password} onChange={(e) => setPassword(e.target.value)}
               placeholder="Mot de passe organisateur..." autoFocus />
           </div>
-          <Button type="submit" className="w-full">Entrer</Button>
+          <Button type="submit" className="w-full" disabled={loggingIn}>{loggingIn ? "Connexion..." : "Entrer"}</Button>
         </form>
       </main>
     );
