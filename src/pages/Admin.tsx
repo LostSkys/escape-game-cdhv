@@ -37,6 +37,7 @@ const REFRESH_MS = 5 * 60 * 1000; // 5 minutes
 const Admin = () => {
   const [authed, setAuthed] = useState(adminAuth.isAuthed());
   const [password, setPassword] = useState("");
+  const [loggingIn, setLoggingIn] = useState(false);
   const [teams, setTeams] = useState<TeamRow[]>([]);
   const [players, setPlayers] = useState<PlayerRow[]>([]);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
@@ -47,8 +48,10 @@ const Admin = () => {
 
   const handleDelete = async () => {
     if (!deletingTeam) return;
+    const pwd = adminAuth.getPassword();
+    if (!pwd) { toast.error("Session expirée"); return; }
     setDeleting(true);
-    const { error } = await supabase.rpc("delete_team", { p_team_id: deletingTeam.id });
+    const { error } = await supabase.rpc("admin_delete_team", { p_password: pwd, p_team_id: deletingTeam.id });
     setDeleting(false);
     if (error) { toast.error("Erreur de suppression"); return; }
     toast.success(`Équipe "${deletingTeam.name}" supprimée`);
@@ -57,13 +60,22 @@ const Admin = () => {
   };
 
   const load = async () => {
+    const pwd = adminAuth.getPassword();
+    if (!pwd) return;
     setRefreshing(true);
     const [teamsRes, playersRes] = await Promise.all([
-      supabase.from("teams").select("id, name, current_step, total_faults, total_points, started_at, finished_at"),
-      supabase.from("players").select("id, team_id, first_name, last_name"),
+      supabase.rpc("admin_list_teams", { p_password: pwd }),
+      supabase.rpc("admin_list_players", { p_password: pwd }),
     ]);
-    if (teamsRes.data) setTeams(teamsRes.data);
-    if (playersRes.data) setPlayers(playersRes.data);
+    if (teamsRes.error || playersRes.error) {
+      toast.error("Session expirée — reconnectez-vous");
+      adminAuth.logout();
+      setAuthed(false);
+      setRefreshing(false);
+      return;
+    }
+    if (teamsRes.data) setTeams(teamsRes.data as TeamRow[]);
+    if (playersRes.data) setPlayers(playersRes.data as PlayerRow[]);
     setLastRefresh(new Date());
     setRefreshing(false);
   };
@@ -75,9 +87,12 @@ const Admin = () => {
     return () => clearInterval(interval);
   }, [authed]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (adminAuth.login(password)) { setAuthed(true); toast.success("Connecté"); }
+    setLoggingIn(true);
+    const ok = await adminAuth.login(password);
+    setLoggingIn(false);
+    if (ok) { setAuthed(true); toast.success("Connecté"); }
     else toast.error("Mot de passe incorrect");
   };
 
