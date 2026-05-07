@@ -168,15 +168,58 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      complete_composite_step: {
-        Args: { p_step_id: string; p_team_id: string }
-        Returns: Json
+      _check_admin: { Args: { p_password: string }; Returns: undefined }
+      _check_team_token: {
+        Args: { p_team_id: string; p_token: string }
+        Returns: undefined
       }
-      complete_room_step: {
-        Args: { p_step_id: string; p_team_id: string }
-        Returns: Json
+      admin_check: { Args: { p_password: string }; Returns: boolean }
+      admin_delete_team: {
+        Args: { p_password: string; p_team_id: string }
+        Returns: undefined
       }
-      delete_team: { Args: { p_team_id: string }; Returns: undefined }
+      admin_list_players: {
+        Args: { p_password: string }
+        Returns: {
+          first_name: string
+          id: string
+          last_name: string
+          team_id: string
+        }[]
+      }
+      admin_list_teams: {
+        Args: { p_password: string }
+        Returns: {
+          current_step: number
+          finished_at: string
+          id: string
+          name: string
+          started_at: string
+          total_faults: number
+          total_points: number
+        }[]
+      }
+      admin_update_team: {
+        Args: {
+          p_name: string
+          p_password: string
+          p_players: Json
+          p_team_id: string
+        }
+        Returns: undefined
+      }
+      complete_composite_step:
+        | { Args: { p_step_id: string; p_team_id: string }; Returns: Json }
+        | {
+            Args: { p_step_id: string; p_team_id: string; p_token: string }
+            Returns: Json
+          }
+      complete_room_step:
+        | { Args: { p_step_id: string; p_team_id: string }; Returns: Json }
+        | {
+            Args: { p_step_id: string; p_team_id: string; p_token: string }
+            Returns: Json
+          }
       find_team_by_name: {
         Args: { p_name: string }
         Returns: {
@@ -185,7 +228,9 @@ export type Database = {
           token: string
         }[]
       }
-      finish_game: { Args: { p_team_id: string }; Returns: undefined }
+      finish_game:
+        | { Args: { p_team_id: string }; Returns: undefined }
+        | { Args: { p_team_id: string; p_token: string }; Returns: undefined }
       get_step_by_code: {
         Args: { p_code: string }
         Returns: {
@@ -197,28 +242,76 @@ export type Database = {
           type: Database["public"]["Enums"]["step_type"]
         }[]
       }
-      score_minijeu: {
+      get_team_progress: {
+        Args: { p_team_id: string; p_token: string }
+        Returns: {
+          completed_at: string
+          faults: number
+          step_id: string
+          step_order: number
+        }[]
+      }
+      get_team_status: {
+        Args: { p_team_id: string; p_token: string }
+        Returns: {
+          current_step: number
+          finished_at: string
+          name: string
+          total_faults: number
+          total_points: number
+        }[]
+      }
+      register_team: {
+        Args: { p_name: string; p_players: Json }
+        Returns: {
+          id: string
+          name: string
+          token: string
+        }[]
+      }
+      validate_minijeu: {
         Args: {
-          p_correct: number
+          p_answers: Json
           p_step_id: string
           p_team_id: string
-          p_wrong: number
+          p_token: string
         }
         Returns: Json
       }
-      validate_step_answer: {
-        Args: { p_answer: string; p_step_id: string; p_team_id: string }
-        Returns: Json
-      }
-      validate_substep: {
-        Args: {
-          p_answer: string
-          p_step_id: string
-          p_sub_index: number
-          p_team_id: string
-        }
-        Returns: Json
-      }
+      validate_step_answer:
+        | {
+            Args: { p_answer: string; p_step_id: string; p_team_id: string }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_answer: string
+              p_step_id: string
+              p_team_id: string
+              p_token: string
+            }
+            Returns: Json
+          }
+      validate_substep:
+        | {
+            Args: {
+              p_answer: string
+              p_step_id: string
+              p_sub_index: number
+              p_team_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_answer: string
+              p_step_id: string
+              p_sub_index: number
+              p_team_id: string
+              p_token: string
+            }
+            Returns: Json
+          }
     }
     Enums: {
       step_type:

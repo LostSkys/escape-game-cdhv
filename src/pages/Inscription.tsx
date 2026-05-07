@@ -52,33 +52,19 @@ const Inscription = () => {
 
     setLoading(true);
     try {
-      const { data: team, error: teamErr } = await supabase
-        .from("teams")
-        .insert({ name: parsed.data.name })
-        .select("id, name, token")
-        .single();
+      const { data, error } = await supabase.rpc("register_team", {
+        p_name: parsed.data.name,
+        p_players: parsed.data.players as any,
+      });
 
-      if (teamErr || !team) {
-        if (teamErr?.code === "23505") {
-          toast.error("Ce nom d'équipe existe déjà");
-        } else {
-          toast.error("Erreur lors de la création de l'équipe");
-        }
+      if (error) {
+        if (error.message?.includes("duplicate_team")) toast.error("Ce nom d'équipe existe déjà");
+        else toast.error("Erreur lors de la création de l'équipe");
         return;
       }
 
-      const playersInsert = parsed.data.players.map((p) => ({
-        team_id: team.id,
-        first_name: p.first_name,
-        last_name: p.last_name,
-      }));
-
-      const { error: playersErr } = await supabase.from("players").insert(playersInsert);
-      if (playersErr) {
-        toast.error("Erreur lors de l'ajout des joueurs");
-        await supabase.from("teams").delete().eq("id", team.id);
-        return;
-      }
+      const team = (data as any[])?.[0];
+      if (!team) { toast.error("Erreur lors de la création de l'équipe"); return; }
 
       teamStorage.set({ id: team.id, name: team.name, token: team.token });
       toast.success(`Équipe « ${team.name} » créée !`);
