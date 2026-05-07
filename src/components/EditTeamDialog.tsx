@@ -12,7 +12,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil } from "lucide-react";
+import { adminAuth } from "@/lib/adminAuth";
 
 type Player = { id: string; first_name: string; last_name: string };
 
