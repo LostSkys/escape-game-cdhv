@@ -46,32 +46,28 @@ const EditTeamDialog = ({ open, onOpenChange, team, players, onSaved }: Props) =
       toast.error("Le nom de l'équipe est obligatoire");
       return;
     }
-    setSaving(true);
-    const { error: teamErr } = await supabase
-      .from("teams")
-      .update({ name: name.trim() })
-      .eq("id", team.id);
-    if (teamErr) {
-      toast.error("Erreur sauvegarde équipe");
-      setSaving(false);
+    const password = adminAuth.getPassword();
+    if (!password) {
+      toast.error("Session admin expirée");
       return;
     }
-    for (const p of editedPlayers) {
-      const original = players.find((x) => x.id === p.id);
-      if (!original) continue;
-      if (original.first_name !== p.first_name || original.last_name !== p.last_name) {
-        const { error } = await supabase
-          .from("players")
-          .update({ first_name: p.first_name.trim(), last_name: p.last_name.trim() })
-          .eq("id", p.id);
-        if (error) {
-          toast.error(`Erreur sur ${original.first_name}`);
-          setSaving(false);
-          return;
-        }
-      }
-    }
+    setSaving(true);
+    const playersPayload = editedPlayers.map((p) => ({
+      id: p.id,
+      first_name: p.first_name.trim(),
+      last_name: p.last_name.trim(),
+    }));
+    const { error } = await supabase.rpc("admin_update_team", {
+      p_password: password,
+      p_team_id: team.id,
+      p_name: name.trim(),
+      p_players: playersPayload as any,
+    });
     setSaving(false);
+    if (error) {
+      toast.error("Erreur sauvegarde");
+      return;
+    }
     toast.success("Équipe mise à jour");
     onSaved();
     onOpenChange(false);
