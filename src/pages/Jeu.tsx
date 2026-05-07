@@ -31,20 +31,18 @@ const Jeu = () => {
 
   const checkFinished = async () => {
     if (!team) return;
-    const { data } = await supabase.from("teams").select("finished_at, total_points").eq("id", team.id).maybeSingle();
-    if (data?.finished_at) setFinished(true);
-    if (data?.total_points !== undefined && data?.total_points !== null) setPoints(data.total_points);
+    const { data } = await supabase.rpc("get_team_status", { p_team_id: team.id, p_token: team.token });
+    const row = (data as any[])?.[0];
+    if (row?.finished_at) setFinished(true);
+    if (row?.total_points !== undefined && row?.total_points !== null) setPoints(row.total_points);
   };
 
   const loadProgress = async () => {
     if (!team) return;
-    const { data } = await supabase
-      .from("team_progress")
-      .select("step_id, faults, completed_at")
-      .eq("team_id", team.id);
+    const { data } = await supabase.rpc("get_team_progress", { p_team_id: team.id, p_token: team.token });
     if (data) {
       const map: Record<string, { faults: number; completed: boolean }> = {};
-      data.forEach((p) => {
+      (data as any[]).forEach((p) => {
         map[p.step_id] = { faults: p.faults, completed: !!p.completed_at };
       });
       setProgressMap(map);
@@ -80,7 +78,7 @@ const Jeu = () => {
 
   const handleFinish = async () => {
     if (!team) return;
-    await supabase.rpc("finish_game", { p_team_id: team.id });
+    await supabase.rpc("finish_game", { p_team_id: team.id, p_token: team.token });
     setFinished(true);
     toast.success("Partie terminée ! Bravo 🎉");
   };
@@ -129,6 +127,7 @@ const Jeu = () => {
           <StepView
             step={currentStep}
             teamId={team.id}
+            teamToken={team.token}
             onCompleted={handleStepCompleted}
             onCancel={() => setCurrentStep(null)}
             alreadyCompleted={!!progressMap[currentStep.id]?.completed}
