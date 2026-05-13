@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { ArrowLeft, LogOut, Medal, Pencil, RefreshCw, Trash2, Trophy, Users } from "lucide-react";
 import EditTeamDialog from "@/components/EditTeamDialog";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +36,7 @@ const TOTAL_STEPS = 20;
 const REFRESH_MS = 5 * 60 * 1000; // 5 minutes
 
 const Admin = () => {
+  const isMobile = useIsMobile();
   const [authed, setAuthed] = useState(adminAuth.isAuthed());
   const [password, setPassword] = useState("");
   const [loggingIn, setLoggingIn] = useState(false);
@@ -203,70 +205,147 @@ const Admin = () => {
           <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
             <Users className="h-6 w-6 text-primary" /> Toutes les équipes ({teams.length})
           </h2>
-          <div className="card-elegant rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-secondary/50 text-left">
-                <tr>
-                  <th className="p-4">Équipe</th>
-                  <th className="p-4">Joueurs</th>
-                  <th className="p-4 w-64">Progression</th>
-                  <th className="p-4 text-center">Points</th>
-                  <th className="p-4 text-center">Fautes</th>
-                  <th className="p-4 text-center">Statut</th>
-                  <th className="p-4 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sorted.map((t) => {
+          
+          {/* Version desktop : tableau */}
+          {!isMobile && (
+            <div className="card-elegant rounded-xl overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-secondary/50 text-left">
+                  <tr>
+                    <th className="p-4">Équipe</th>
+                    <th className="p-4">Joueurs</th>
+                    <th className="p-4 w-64">Progression</th>
+                    <th className="p-4 text-center">Points</th>
+                    <th className="p-4 text-center">Fautes</th>
+                    <th className="p-4 text-center">Statut</th>
+                    <th className="p-4 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sorted.map((t) => {
+                    const completed = Math.min(TOTAL_STEPS, Math.max(0, t.current_step - 1));
+                    const pct = Math.round((completed / TOTAL_STEPS) * 100);
+                    return (
+                      <tr key={t.id} className="border-t border-border">
+                        <td className="p-4 font-semibold">{t.name}</td>
+                        <td className="p-4 text-muted-foreground">
+                          {(playersByTeam[t.id] ?? []).map((p) => `${p.first_name} ${p.last_name}`).join(", ") || "—"}
+                        </td>
+                        <td className="p-4">
+                          <div className="space-y-1">
+                            <Progress value={pct} className="h-2" />
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                              <span>{completed}/{TOTAL_STEPS} étapes</span>
+                              <span>{pct}%</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-4 text-center font-bold text-primary">{t.total_points}</td>
+                        <td className="p-4 text-center">{t.total_faults}</td>
+                        <td className="p-4 text-center">
+                          {t.finished_at
+                            ? <span className="text-success">✅ Terminé</span>
+                            : <span className="text-muted-foreground">⏳ En cours</span>}
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center justify-center gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => setEditingTeam(t)} aria-label="Modifier">
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setDeletingTeam(t)}
+                              aria-label="Supprimer"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {teams.length === 0 && (
+                    <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Aucune équipe inscrite pour le moment.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+          
+          {/* Version mobile : cartes */}
+          {isMobile && (
+            <div className="space-y-3">
+              {sorted.length > 0 ? (
+                sorted.map((t) => {
                   const completed = Math.min(TOTAL_STEPS, Math.max(0, t.current_step - 1));
                   const pct = Math.round((completed / TOTAL_STEPS) * 100);
                   return (
-                    <tr key={t.id} className="border-t border-border">
-                      <td className="p-4 font-semibold">{t.name}</td>
-                      <td className="p-4 text-muted-foreground">
-                        {(playersByTeam[t.id] ?? []).map((p) => `${p.first_name} ${p.last_name}`).join(", ") || "—"}
-                      </td>
-                      <td className="p-4">
-                        <div className="space-y-1">
-                          <Progress value={pct} className="h-2" />
-                          <div className="flex justify-between text-xs text-muted-foreground">
-                            <span>{completed}/{TOTAL_STEPS} étapes</span>
-                            <span>{pct}%</span>
+                    <div key={t.id} className="card-elegant rounded-lg p-4 space-y-3">
+                      <div>
+                        <h3 className="font-semibold text-base mb-1">{t.name}</h3>
+                        <p className="text-xs text-muted-foreground">
+                          {(playersByTeam[t.id] ?? []).map((p) => `${p.first_name} ${p.last_name}`).join(", ") || "—"}
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <Progress value={pct} className="h-2" />
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>{completed}/{TOTAL_STEPS} étapes</span>
+                          <span>{pct}%</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-between items-center text-sm">
+                        <div className="flex gap-4">
+                          <div>
+                            <span className="text-muted-foreground">Points: </span>
+                            <span className="font-bold text-primary">{t.total_points}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Fautes: </span>
+                            <span className="font-semibold">{t.total_faults}</span>
                           </div>
                         </div>
-                      </td>
-                      <td className="p-4 text-center font-bold text-primary">{t.total_points}</td>
-                      <td className="p-4 text-center">{t.total_faults}</td>
-                      <td className="p-4 text-center">
-                        {t.finished_at
-                          ? <span className="text-success">✅ Terminé</span>
-                          : <span className="text-muted-foreground">⏳ En cours</span>}
-                      </td>
-                      <td className="p-4">
-                        <div className="flex items-center justify-center gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => setEditingTeam(t)} aria-label="Modifier">
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setDeletingTeam(t)}
-                            aria-label="Supprimer"
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
+                        <span className="text-xs">
+                          {t.finished_at
+                            ? <span className="text-success">✅ Terminé</span>
+                            : <span className="text-muted-foreground">⏳ En cours</span>}
+                        </span>
+                      </div>
+                      
+                      <div className="flex gap-2 pt-2 border-t border-border">
+                        <Button 
+                          variant="default" 
+                          size="sm"
+                          className="flex-1 gap-2"
+                          onClick={() => setEditingTeam(t)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                          Modifier
+                        </Button>
+                        <Button 
+                          variant="destructive" 
+                          size="sm"
+                          className="flex-1 gap-2"
+                          onClick={() => setDeletingTeam(t)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Supprimer
+                        </Button>
+                      </div>
+                    </div>
                   );
-                })}
-                {teams.length === 0 && (
-                  <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Aucune équipe inscrite pour le moment.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                })
+              ) : (
+                <div className="card-elegant rounded-lg p-8 text-center text-muted-foreground">
+                  Aucune équipe inscrite pour le moment.
+                </div>
+              )}
+            </div>
+          )}
         </section>
       </div>
 
