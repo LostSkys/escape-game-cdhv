@@ -210,7 +210,7 @@ SET search_path = public
 AS $$
 BEGIN
   -- Vérification du mot de passe admin (même que dans adminAuth.ts)
-  IF p_admin_password != 'CDHV2025' THEN
+  IF p_admin_password != 'cdhv-admin-2026-secure' THEN
     RETURN jsonb_build_object('error', 'Mot de passe admin invalide');
   END IF;
 
