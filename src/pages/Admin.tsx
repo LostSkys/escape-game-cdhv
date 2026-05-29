@@ -465,6 +465,18 @@ const Admin = () => {
   const [attemptHistory, setAttemptHistory] = useState<AttemptHistory[]>([]);
   const [hintProgression, setHintProgression] = useState<HintProgression[]>([]);
 
+  const validatedRoomProgress = attemptHistory.reduce<Record<number, number>>((acc, attempt) => {
+    if (attempt.is_correct) {
+      acc[attempt.room_number] = (acc[attempt.room_number] ?? 0) + 1;
+    }
+    return acc;
+  }, {});
+
+  const roomUnlockStatus = hintProgression.reduce<Record<number, boolean>>((acc, hint) => {
+    acc[hint.room_order] = hint.unlocked;
+    return acc;
+  }, {});
+
   // Manual points adjustment
   const [pointsAdjustTeam, setPointsAdjustTeam] = useState<string | null>(null);
   const [pointsAdjustValue, setPointsAdjustValue] = useState(0);
@@ -1256,51 +1268,81 @@ const Admin = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {roomGuides.map((room) => (
-                  <div key={room.room_number} className="p-4 bg-slate-900 rounded-lg border border-slate-800">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="text-lg font-semibold text-slate-200">{room.title}</p>
-                        <p className="text-sm text-slate-400">Questions : {room.questions.length} / Enigme : {room.enigme.title.includes('Pas d') ? 0 : 1} / Mini-jeu : {room.mini_game.rules.includes('Aucun') ? 0 : 1}</p>
+                {roomGuides.map((room) => {
+                  const correctCount = validatedRoomProgress[room.room_number] ?? 0;
+                  const isRoomComplete = roomUnlockStatus[room.room_number] ?? false;
+                  return (
+                    <div
+                      key={room.room_number}
+                      className={`p-4 rounded-lg border transition-colors ${
+                        isRoomComplete
+                          ? "border-emerald-400/40 bg-emerald-500/10"
+                          : correctCount > 0
+                          ? "border-emerald-400/20 bg-emerald-500/5"
+                          : "border-slate-800 bg-slate-900"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="text-lg font-semibold text-slate-200">{room.title}</p>
+                          <p className="text-sm text-slate-400">Questions : {room.questions.length} / Enigme : {room.enigme.title.includes('Pas d') ? 0 : 1} / Mini-jeu : {room.mini_game.rules.includes('Aucun') ? 0 : 1}</p>
+                        </div>
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                          isRoomComplete ? "bg-emerald-500/20 text-emerald-200" : correctCount > 0 ? "bg-emerald-500/10 text-emerald-100" : "bg-slate-800 text-slate-400"
+                        }`}>
+                          {isRoomComplete ? "Validé ✓" : correctCount > 0 ? `Partiellement validé (${correctCount})` : "En attente"}
+                        </span>
+                      </div>
+
+                      <div className="mt-4 space-y-3 text-sm text-slate-300">
+                        <div>
+                          <p className="font-semibold text-slate-200">MJ</p>
+                          <p>{room.mj}</p>
+                        </div>
+
+                        <div>
+                          <p className="font-semibold text-slate-200">Questions</p>
+                          <div className="space-y-2 mt-2">
+                            {room.questions.map((question, idx) => (
+                              <div
+                                key={idx}
+                                className={`rounded-md border p-3 ${
+                                  idx < correctCount
+                                    ? "border-emerald-400 bg-emerald-500/10"
+                                    : "border-slate-800 bg-slate-950"
+                                }`}
+                              >
+                                <div className="flex items-center justify-between gap-3">
+                                  <p className="font-medium text-slate-100">{question.prompt}</p>
+                                  {idx < correctCount && (
+                                    <span className="text-emerald-300 text-xs font-semibold">Validé ✓</span>
+                                  )}
+                                </div>
+                                <p className="text-slate-400 text-xs mt-1">Indice : {question.hint}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="font-semibold text-slate-200">Énigme</p>
+                          <div className="rounded-md border border-slate-800 bg-slate-950 p-3 mt-2">
+                            <p className="font-medium text-slate-100">{room.enigme.title}</p>
+                            <p className="text-slate-400 text-xs mt-1">Indices : {room.enigme.hints}</p>
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="font-semibold text-slate-200">Mini-jeu</p>
+                          <div className="rounded-md border border-slate-800 bg-slate-950 p-3 mt-2">
+                            <p className="font-medium text-slate-100">Règles : {room.mini_game.rules}</p>
+                            <p className="text-slate-400 text-xs mt-1">Attention : {room.mini_game.attention}</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
-
-                    <div className="mt-4 space-y-3 text-sm text-slate-300">
-                      <div>
-                        <p className="font-semibold text-slate-200">MJ</p>
-                        <p>{room.mj}</p>
-                      </div>
-
-                      <div>
-                        <p className="font-semibold text-slate-200">Questions</p>
-                        <div className="space-y-2 mt-2">
-                          {room.questions.map((question, idx) => (
-                            <div key={idx} className="rounded-md border border-slate-800 bg-slate-950 p-3">
-                              <p className="font-medium text-slate-100">{question.prompt}</p>
-                              <p className="text-slate-400 text-xs">Indice : {question.hint}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div>
-                        <p className="font-semibold text-slate-200">Énigme</p>
-                        <div className="rounded-md border border-slate-800 bg-slate-950 p-3 mt-2">
-                          <p className="font-medium text-slate-100">{room.enigme.title}</p>
-                          <p className="text-slate-400 text-xs mt-1">Indices : {room.enigme.hints}</p>
-                        </div>
-                      </div>
-
-                      <div>
-                        <p className="font-semibold text-slate-200">Mini-jeu</p>
-                        <div className="rounded-md border border-slate-800 bg-slate-950 p-3 mt-2">
-                          <p className="font-medium text-slate-100">Règles : {room.mini_game.rules}</p>
-                          <p className="text-slate-400 text-xs mt-1">Attention : {room.mini_game.attention}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </CardContent>
             </Card>
           </TabsContent>
