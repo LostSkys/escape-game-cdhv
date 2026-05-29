@@ -10,17 +10,18 @@ import { ArrowLeft, AlertCircle, CheckCircle, Lightbulb } from "lucide-react";
 interface Question {
   id: string;
   title: string;
-  content: Record<string, any>;
+  question_order: number | null;
+  question_text: string | null;
   hint_text: string | null;
   next_question_hint: string | null;
+  code_part: string | null;
   room_id: string | null;
-  question_order: number | null;
+  room_order: number | null;
 }
 
 interface QuestionViewProps {
   roomId: string;
   teamId: string;
-  teamToken: string;
   onCompleted: (codeParts: string[]) => void;
   onCancel: () => void;
 }
@@ -69,7 +70,7 @@ export default function QuestionView({
       // Charger la progression
       const { data: progressData, error: progressError } = await supabase.rpc(
         "get_team_progress_detailed",
-        { p_team_id: teamId, p_token: teamToken }
+        { p_team_id: teamId, p_room_id: roomId }
       );
 
       if (progressError) {
@@ -112,18 +113,20 @@ export default function QuestionView({
         }
       );
 
+      const response = Array.isArray(result) ? result[0] : result;
+
       if (error) {
         toast.error("Erreur de validation");
         return;
       }
 
-      if (result.correct) {
+      if (response?.correct) {
         toast.success("✅ Bonne réponse !");
         setAnswer("");
 
         // Ajouter le code_part
-        if (result.code_part) {
-          setCodeParts([...codeParts, result.code_part]);
+        if (response?.code_part) {
+          setCodeParts([...codeParts, response.code_part]);
         }
 
         // Mettre à jour la progression
@@ -204,14 +207,10 @@ export default function QuestionView({
 
           {/* Contenu de la question */}
           <div className="bg-secondary/30 rounded-lg p-4 space-y-2">
-            {currentQuestion.content?.question && (
-              <p className="text-base font-semibold">{currentQuestion.content.question}</p>
-            )}
-            {currentQuestion.content?.riddle && (
-              <p className="text-base italic">{currentQuestion.content.riddle}</p>
-            )}
-            {currentQuestion.content?.description && (
-              <p className="text-sm text-muted-foreground">{currentQuestion.content.description}</p>
+            {currentQuestion.question_text ? (
+              <p className="text-base font-semibold">{currentQuestion.question_text}</p>
+            ) : (
+              <p className="text-base font-semibold">{currentQuestion.title}</p>
             )}
           </div>
 

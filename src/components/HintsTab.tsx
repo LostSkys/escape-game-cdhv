@@ -6,7 +6,6 @@ import { toast } from "sonner";
 
 interface HintsTabProps {
   teamId: string;
-  teamToken: string;
 }
 
 interface HintsData {
@@ -51,7 +50,7 @@ export default function HintsTab({ teamId, teamToken }: HintsTabProps) {
 
       const { data: storyData, error: storyError } = await supabase.rpc(
         "get_team_accumulated_story",
-        { p_team_id: teamId, p_token: teamToken }
+        { p_team_id: teamId }
       );
 
       if (storyError) {

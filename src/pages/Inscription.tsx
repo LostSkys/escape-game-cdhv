@@ -1,156 +1,185 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { teamStorage } from "@/lib/teamStorage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Trash2, UserPlus } from "lucide-react";
+import { ArrowLeft, Search } from "lucide-react";
 
-const playerSchema = z.object({
-  first_name: z.string().trim().min(1, "Prénom requis").max(50),
-  last_name: z.string().trim().min(1, "Nom requis").max(50),
-});
-
-const teamSchema = z.object({
-  name: z.string().trim().min(2, "Nom d'équipe trop court").max(60),
-  players: z.array(playerSchema).min(1, "Au moins 1 joueur").max(10, "10 joueurs maximum"),
-});
+interface TeamOption {
+  id: string;
+  team_name: string;
+  members: string;
+  points: number;
+}
 
 const Inscription = () => {
   const navigate = useNavigate();
-  const [teamName, setTeamName] = useState("");
-  const [players, setPlayers] = useState([{ first_name: "", last_name: "" }]);
-  const [loading, setLoading] = useState(false);
+  const [teamSearch, setTeamSearch] = useState("");
+  const [teams, setTeams] = useState<TeamOption[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selecting, setSelecting] = useState(false);
 
-  const updatePlayer = (i: number, field: "first_name" | "last_name", value: string) => {
-    setPlayers((prev) => prev.map((p, idx) => (idx === i ? { ...p, [field]: value } : p)));
-  };
+  useEffect(() => {
+    loadTeams();
+  }, []);
 
-  const addPlayer = () => {
-    if (players.length >= 10) {
-      toast.error("Maximum 10 joueurs par équipe");
-      return;
-    }
-    setPlayers((prev) => [...prev, { first_name: "", last_name: "" }]);
-  };
-
-  const removePlayer = (i: number) => {
-    if (players.length === 1) return;
-    setPlayers((prev) => prev.filter((_, idx) => idx !== i));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const parsed = teamSchema.safeParse({ name: teamName, players });
-    if (!parsed.success) {
-      toast.error(parsed.error.issues[0].message);
-      return;
-    }
-
-    setLoading(true);
+  const loadTeams = async () => {
     try {
-      const { data, error } = await supabase.rpc("register_team", {
-        p_name: parsed.data.name,
-        p_players: parsed.data.players as any,
-      });
+      const { data, error } = await (supabase.rpc("get_leaderboard") as any);
 
       if (error) {
-        if (error.message?.includes("duplicate_team")) toast.error("Ce nom d'équipe existe déjà");
-        else toast.error("Erreur lors de la création de l'équipe");
+        toast.error("Erreur lors du chargement des équipes");
         return;
       }
 
-      const team = (data as any[])?.[0];
-      if (!team) { toast.error("Erreur lors de la création de l'équipe"); return; }
-
-      teamStorage.set({ id: team.id, name: team.name, token: team.token });
-      toast.success(`Équipe « ${team.name} » créée !`);
-      navigate("/jeu");
+      if (data) {
+        // Convert leaderboard data to team options
+        const teamOptions: TeamOption[] = data.map((entry: any) => ({
+          id: entry.team_name, // Using team_name as ID for now
+          team_name: entry.team_name,
+          members: entry.members,
+          points: entry.points,
+        }));
+        setTeams(teamOptions);
+      }
+    } catch (err) {
+      console.error("Error loading teams:", err);
+      toast.error("Erreur lors du chargement");
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSelectTeam = async (team: TeamOption) => {
+    setSelecting(true);
+
+    // Get full team data from database
+    try {
+      const { data, error } = await supabase
+        .from("teams")
+        .select("id, name, points, team_members(first_name, last_name)")
+        .eq("name", team.team_name)
+        .single();
+
+      if (error) {
+        toast.error("Équipe non trouvée");
+        setSelecting(false);
+        return;
+      }
+
+      // Save to localStorage
+      localStorage.setItem(
+        "team_data",
+        JSON.stringify({
+          team_id: data.id,
+          team_name: data.name,
+          points: data.points,
+          members: team.members,
+        })
+      );
+
+      toast.success(`Bienvenue ${data.name}!`);
+      navigate("/jeu");
+    } catch (err) {
+      console.error("Error selecting team:", err);
+      toast.error("Erreur lors de la sélection de l'équipe");
+      setSelecting(false);
+    }
+  };
+
+  const filteredTeams = teams.filter((team) =>
+    team.team_name.toLowerCase().includes(teamSearch.toLowerCase())
+  );
+
   return (
-    <main className="min-h-screen px-6 py-10">
+    <main className="min-h-screen px-4 py-6 bg-gradient-to-br from-slate-950 to-slate-900">
       <div className="max-w-2xl mx-auto">
-        <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary mb-8 transition-smooth">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200 transition-colors mb-8"
+        >
           <ArrowLeft className="h-4 w-4" /> Retour
         </Link>
 
-        <header className="mb-8 space-y-2">
-          <h1 className="text-4xl font-extrabold">Inscription de l'équipe</h1>
-          <p className="text-muted-foreground">Choisissez un nom et ajoutez jusqu'à 10 joueurs.</p>
-        </header>
-
-        <form onSubmit={handleSubmit} className="space-y-8">
-          <div className="card-elegant rounded-xl p-6 space-y-2">
-            <Label htmlFor="teamName" className="text-base">Nom de l'équipe</Label>
-            <Input
-              id="teamName"
-              value={teamName}
-              onChange={(e) => setTeamName(e.target.value)}
-              placeholder="Ex: Les Explorateurs..."
-              maxLength={60}
-              className="h-12 text-lg"
-              required
-            />
-          </div>
-
-          <div className="card-elegant rounded-xl p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Joueurs ({players.length}/10)</h2>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={addPlayer}
-                disabled={players.length >= 10}
-              >
-                <Plus className="h-4 w-4 mr-1" /> Ajouter
-              </Button>
-            </div>
-
-            <div className="space-y-3">
-              {players.map((p, i) => (
-                <div key={i} className="flex gap-2 items-start">
+        <Card className="border-slate-800 bg-slate-950 mb-8">
+          <CardHeader>
+            <CardTitle className="text-3xl">Rejoindre une Équipe</CardTitle>
+            <CardDescription>
+              Sélectionnez votre équipe parmi celles créées par les organisateurs
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="search">Chercher une équipe</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                   <Input
-                    placeholder="Prénom du joueur..."
-                    value={p.first_name}
-                    onChange={(e) => updatePlayer(i, "first_name", e.target.value)}
-                    maxLength={50}
-                    required
+                    id="search"
+                    value={teamSearch}
+                    onChange={(e) => setTeamSearch(e.target.value)}
+                    placeholder="Tapez le nom de votre équipe..."
+                    className="pl-10 bg-slate-900 border-slate-700 text-slate-200"
                   />
-                  <Input
-                    placeholder="Nom du joueur..."
-                    value={p.last_name}
-                    onChange={(e) => updatePlayer(i, "last_name", e.target.value)}
-                    maxLength={50}
-                    required
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removePlayer(i)}
-                    disabled={players.length === 1}
-                    aria-label="Supprimer ce joueur"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
                 </div>
-              ))}
+              </div>
             </div>
-          </div>
+          </CardContent>
+        </Card>
 
-          <Button type="submit" size="lg" className="w-full h-14 text-base" disabled={loading}>
-            <UserPlus className="mr-2 h-5 w-5" />
-            {loading ? "Création..." : "Démarrer l'aventure"}
-          </Button>
-        </form>
+        {loading ? (
+          <div className="text-center text-slate-400 py-8">
+            <p>Chargement des équipes...</p>
+          </div>
+        ) : filteredTeams.length === 0 ? (
+          <Card className="border-slate-800 bg-slate-950">
+            <CardContent className="py-8 text-center">
+              <p className="text-slate-400">
+                {teams.length === 0
+                  ? "Aucune équipe créée pour le moment"
+                  : "Aucune équipe trouvée avec ce nom"}
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {filteredTeams.map((team) => (
+              <Card
+                key={team.id}
+                className="border-slate-800 bg-slate-950 hover:border-slate-700 transition-colors cursor-pointer"
+                onClick={() => handleSelectTeam(team)}
+              >
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-semibold text-slate-200 text-lg">{team.team_name}</h3>
+                      <p className="text-sm text-slate-400 mt-1">{team.members}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xl font-bold text-blue-400">{team.points} pts</p>
+                      <Button
+                        disabled={selecting}
+                        className="mt-2 bg-blue-600 hover:bg-blue-700"
+                      >
+                        {selecting ? "Chargement..." : "Rejoindre"}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-12 p-6 bg-slate-900 rounded-lg border border-slate-800">
+          <p className="text-sm text-slate-400">
+            💡 <span className="font-semibold">Info:</span> Les équipes sont créées par les organisateurs. Si vous ne voyez
+            pas votre équipe, contactez-les pour vous faire ajouter.
+          </p>
+        </div>
       </div>
     </main>
   );

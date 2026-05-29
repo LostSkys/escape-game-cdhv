@@ -69,6 +69,13 @@
     --sidebar-accent-foreground: 222 15% 18%;
     --sidebar-border: 183 15% 88%;
     --sidebar-ring: 326 100% 35%;
+    /* Form accent for inputs/labels/titles */
+    --form-accent: #87a2a3;
+    --form-accent-placeholder: #7f9b9b;
+    /* Button accent (global) */
+    --btn-accent: #892659;
+    --btn-accent-foreground: #ffffff;
+    --btn-accent-hover-brightness: 0.92;
   }
 }
 
@@ -87,6 +94,7 @@
     @apply font-bold tracking-tight;
     font-family: 'Simonetta', 'Poppins', serif;
     font-weight: 900;
+    color: var(--form-accent);
   }
 }
 
@@ -105,6 +113,19 @@
   }
   .transition-smooth { transition: var(--transition-smooth); }
   .font-display { font-family: 'Simonetta', serif; font-weight: 900; }
+  .form-accent { color: var(--form-accent) !important; }
+  .placeholder-form-accent::placeholder { color: var(--form-accent-placeholder) !important; }
+
+/* Apply accent color to all buttons except those explicitly opted out */
+button:not(.no-accent) {
+  background-color: var(--btn-accent) !important;
+  color: var(--btn-accent-foreground) !important;
+  border-color: transparent !important;
+}
+
+button:not(.no-accent):hover {
+  filter: brightness(var(--btn-accent-hover-brightness)) !important;
+}
 }
 
 @keyframes pulse-glow {

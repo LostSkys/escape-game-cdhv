@@ -12,11 +12,8 @@ export const adminAuth = {
   isAuthed(): boolean {
     return !!sessionStorage.getItem(KEY);
   },
-  async login(password: string): Promise<boolean> {
-    const { data, error } = await supabase.rpc("admin_check", { p_password: password });
-    if (error || !data) return false;
+  setPassword(password: string): void {
     sessionStorage.setItem(KEY, password);
-    return true;
   },
   logout() {
     sessionStorage.removeItem(KEY);
