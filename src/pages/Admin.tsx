@@ -75,7 +75,7 @@ interface LeaderboardEntry {
 }
 
 interface AttemptHistory {
-  room_number: number;
+  room_order: number;
   room_title: string;
   answer_submitted: string;
   is_correct: boolean;
@@ -136,20 +136,20 @@ const roomGuides: RoomGuide[] = [
   },
   {
     room_number: 2,
-    title: "Salle 2 - Bureau",
-    mj: "Présentez la salle comme un bureau secret et invitez-les à chercher les mots cachés dans les documents.",
+    title: "Salle 2 - Massif",
+    mj: "Animateur de terrain. Il divise le groupe en deux sous-équipes : les \"pisteurs\" et les \"orienteurs\". Si le groupe piétine, il utilise la boussole pour les guider à haute voix vers le Nord.",
     questions: [
       {
-        prompt: "Question 1 : mot secret dans le bureau",
-        hint: "Montrez l'affiche et demandez-leur de lire attentivement.",
+        prompt: "Question 1 : Quel animal emblématique des Vosges est représenté sur la table devant vous ? ",
+        hint: "on en croise dans les forêts de conifères",
       },
       {
-        prompt: "Question 2 : mot sur le dossier noir",
-        hint: "Concentrez-les sur le dossier et la couleur sombre.",
+        prompt: "Question 2 : Citez toutes les plantes des vosges utilisées dans nos bonbons",
+        hint: "chercher les saveurs dans la sale",
       },
       {
-        prompt: "Question 3 : objet utile sur le bureau",
-        hint: "Insistez sur les objets qui semblent importants.",
+        prompt: "Question 3 : À quelle altitude moyenne se situe la confiserie ?",
+        hint: "Regardez la carte des Vosges et trouvez notre emplacement.",
       },
       {
         prompt: "Question 4 : mot caché sous l'ordinateur",
@@ -467,7 +467,10 @@ const Admin = () => {
 
   const validatedRoomProgress = attemptHistory.reduce<Record<number, number>>((acc, attempt) => {
     if (attempt.is_correct) {
-      acc[attempt.room_number] = (acc[attempt.room_number] ?? 0) + 1;
+      const roomOrder = attempt.room_order ?? (attempt as any).room_number;
+      if (roomOrder != null) {
+        acc[roomOrder] = (acc[roomOrder] ?? 0) + 1;
+      }
     }
     return acc;
   }, {});
@@ -704,7 +707,7 @@ const Admin = () => {
     try {
       const { data, error } = await (supabase.rpc("get_attempt_history", {
         p_team_id: teamId,
-        p_limit: 50,
+        p_limit: 500,
       }) as any);
 
       if (data) {
@@ -733,6 +736,7 @@ const Admin = () => {
   // Select team for validation
   const selectTeamForValidation = (teamId: string) => {
     setSelectedTeam(teamId);
+    setPointsAdjustTeam(teamId);
     const teamData = teams.find((t) => t.team_id === teamId);
     if (teamData) {
       setSelectedTeamData(teamData);
@@ -740,6 +744,12 @@ const Admin = () => {
     loadTeamHistory(teamId);
     loadTeamHintsProgression(teamId);
   };
+
+  useEffect(() => {
+    if (!selectedTeam) return;
+    loadTeamHistory(selectedTeam);
+    loadTeamHintsProgression(selectedTeam);
+  }, [selectedTeam]);
 
   // Adjust points
   const handleAdjustPoints = async () => {
@@ -768,6 +778,11 @@ const Admin = () => {
       } else {
         const sign = pointsAdjustValue > 0 ? "+" : "";
         toast.success(`Points ajustés: ${sign}${pointsAdjustValue}`);
+        setSelectedTeamData((prev) =>
+          prev && prev.team_id === pointsAdjustTeam
+            ? { ...prev, points: newPoints }
+            : prev
+        );
         setPointsAdjustValue(0);
         setPointsAdjustTeam(null);
         setShowAdjustDialog(false);
@@ -999,8 +1014,8 @@ const Admin = () => {
                         onClick={() => selectTeamForValidation(team.team_id)}
                         className={`p-3 rounded-lg border-2 text-left transition-all ${
                           selectedTeam === team.team_id
-                            ? "border-blue-500"
-                            : "border-slate-800 hover:border-slate-700"
+                            ? "border-sky-500 bg-sky-950"
+                            : "border-slate-800 bg-slate-900 hover:border-slate-700"
                         }`}
                       >
                         <p className="font-semibold text-slate-200">{team.team_name}</p>
@@ -1056,31 +1071,33 @@ const Admin = () => {
                       ) : (
                         <div className="space-y-2 max-h-48 overflow-y-auto">
                           {attemptHistory.map((attempt, idx) => (
-                            <div
-                              key={idx}
-                              className="p-3 bg-slate-900 rounded-lg border border-slate-800 text-sm"
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className="font-semibold">
-                                  Salle {attempt.room_number}: {attempt.room_title}
-                                </span>
-                                <span
-                                  className={`text-lg ${
-                                    attempt.is_correct
-                                      ? "text-green-400"
-                                      : "text-red-400"
-                                  }`}
-                                >
-                                  {attempt.is_correct ? "✅" : "❌"}
+                                <div
+                            key={idx}
+                            className="p-3 bg-slate-900 rounded-lg border border-slate-800 text-sm"
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <span className="font-semibold text-slate-200">
+                                  Salle {attempt.room_order}: {attempt.room_title}
                                 </span>
                               </div>
-                              <p className="text-slate-400 text-xs mt-1">
-                                Réponse: {attempt.answer_submitted}
-                              </p>
-                              <p className="text-slate-500 text-xs">
-                                par {attempt.admin_name} • {new Date(attempt.created_at).toLocaleTimeString()}
-                              </p>
+                              <span
+                                className={`rounded-full px-2 py-0.5 text-[11px] font-semibold border ${
+                                  attempt.is_correct
+                                    ? "border-sky-500 bg-sky-500/15 text-sky-100"
+                                    : "border-slate-700 bg-slate-800 text-slate-400"
+                                }`}
+                              >
+                                {attempt.is_correct ? "Validé" : "Incorrect"}
+                              </span>
                             </div>
+                            <p className="text-slate-400 text-xs mt-2">
+                              Réponse : {attempt.answer_submitted}
+                            </p>
+                            <p className="text-slate-500 text-xs mt-1">
+                              par {attempt.admin_name} • {new Date(attempt.created_at).toLocaleTimeString()}
+                            </p>
+                          </div>
                           ))}
                         </div>
                       )}
@@ -1268,29 +1285,63 @@ const Admin = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {roomGuides.map((room) => {
+                {!selectedTeam ? (
+                  <div className="rounded-xl border border-slate-800 bg-slate-950 p-6 text-slate-300">
+                    <p className="text-slate-200 font-semibold mb-2">Aucune équipe sélectionnée</p>
+                    <p className="text-sm">
+                      Sélectionnez une équipe dans l'onglet Validation pour voir le guide MJ mis à jour avec l'état des questions.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 text-slate-300">
+                    <p className="text-sm text-slate-400">Équipe sélectionnée :</p>
+                    <p className="text-lg font-semibold text-slate-100">{selectedTeamData?.team_name || 'Equipe'}</p>
+                  </div>
+                )}
+                {selectedTeam && roomGuides.map((room) => {
                   const correctCount = validatedRoomProgress[room.room_number] ?? 0;
+                  const totalQuestions = room.questions.length;
                   const isRoomComplete = roomUnlockStatus[room.room_number] ?? false;
+                  const roomStatus = isRoomComplete
+                    ? "Validé ✓"
+                    : correctCount > 0
+                    ? `En cours (${correctCount}/${totalQuestions})`
+                    : "En attente";
+                  const roomStatusStyle = isRoomComplete
+                    ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-200"
+                    : correctCount > 0
+                    ? "border-sky-400/20 bg-sky-500/10 text-sky-100"
+                    : "border-slate-800 bg-slate-900 text-slate-400";
+                  const roomTitleStyle = isRoomComplete
+                    ? "text-emerald-200"
+                    : correctCount > 0
+                    ? "text-sky-200"
+                    : "text-slate-200";
+                  const roomCardStyle = isRoomComplete
+                    ? "border-emerald-400/40 bg-emerald-500/10"
+                    : correctCount > 0
+                    ? "border-sky-400/20 bg-sky-500/5"
+                    : "border-slate-800 bg-slate-900";
+
                   return (
                     <div
                       key={room.room_number}
-                      className={`p-4 rounded-lg border transition-colors ${
-                        isRoomComplete
-                          ? "border-emerald-400/40 bg-emerald-500/10"
-                          : correctCount > 0
-                          ? "border-emerald-400/20 bg-emerald-500/5"
-                          : "border-slate-800 bg-slate-900"
-                      }`}
+                      className={`p-4 rounded-lg border transition-colors ${roomCardStyle}`}
                     >
-                      <div className="flex items-center justify-between gap-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                          <p className="text-lg font-semibold text-slate-200">{room.title}</p>
-                          <p className="text-sm text-slate-400">Questions : {room.questions.length} / Enigme : {room.enigme.title.includes('Pas d') ? 0 : 1} / Mini-jeu : {room.mini_game.rules.includes('Aucun') ? 0 : 1}</p>
+                          <p className={`text-lg font-semibold ${roomTitleStyle}`}>{room.title}</p>
+                          <p className="text-sm text-slate-400">
+                            Questions : {totalQuestions} / Enigme : {room.enigme.title.includes("Pas d") ? 0 : 1} / Mini-jeu : {room.mini_game.rules.includes("Aucun") ? 0 : 1}
+                          </p>
+                          {correctCount > 0 && !isRoomComplete ? (
+                            <p className="text-xs text-sky-200 mt-1">
+                              Progression : {correctCount}/{totalQuestions} questions validées
+                            </p>
+                          ) : null}
                         </div>
-                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                          isRoomComplete ? "bg-emerald-500/20 text-emerald-200" : correctCount > 0 ? "bg-emerald-500/10 text-emerald-100" : "bg-slate-800 text-slate-400"
-                        }`}>
-                          {isRoomComplete ? "Validé ✓" : correctCount > 0 ? `Partiellement validé (${correctCount})` : "En attente"}
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${roomStatusStyle}`}>
+                          {roomStatus}
                         </span>
                       </div>
 
@@ -1303,24 +1354,31 @@ const Admin = () => {
                         <div>
                           <p className="font-semibold text-slate-200">Questions</p>
                           <div className="space-y-2 mt-2">
-                            {room.questions.map((question, idx) => (
-                              <div
-                                key={idx}
-                                className={`rounded-md border p-3 ${
-                                  idx < correctCount
-                                    ? "border-emerald-400 bg-emerald-500/10"
-                                    : "border-slate-800 bg-slate-950"
-                                }`}
-                              >
-                                <div className="flex items-center justify-between gap-3">
-                                  <p className="font-medium text-slate-100">{question.prompt}</p>
-                                  {idx < correctCount && (
-                                    <span className="text-emerald-300 text-xs font-semibold">Validé ✓</span>
-                                  )}
+                            {room.questions.map((question, idx) => {
+                              const questionValidated = isRoomComplete || idx < correctCount;
+                              return (
+                                <div
+                                  key={idx}
+                                  className={`rounded-md border p-3 ${
+                                    questionValidated
+                                      ? "border-emerald-400 bg-emerald-500/10"
+                                      : "border-slate-800 bg-slate-950"
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between gap-3">
+                                    <p className="font-medium text-slate-100">{question.prompt}</p>
+                                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                                      questionValidated
+                                        ? "bg-emerald-500/20 text-emerald-200"
+                                        : "bg-slate-800 text-slate-400"
+                                    }`}>
+                                      {questionValidated ? "Validé" : "À valider"}
+                                    </span>
+                                  </div>
+                                  <p className="text-slate-400 text-xs mt-1">Indice : {question.hint}</p>
                                 </div>
-                                <p className="text-slate-400 text-xs mt-1">Indice : {question.hint}</p>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
 
@@ -1361,6 +1419,21 @@ const Admin = () => {
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
+              <Label>Équipe</Label>
+              <select
+                value={pointsAdjustTeam ?? ""}
+                onChange={(e) => setPointsAdjustTeam(e.target.value || null)}
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 text-slate-200 rounded-md"
+              >
+                <option value="">Sélectionnez une équipe</option>
+                {teams.map((team) => (
+                  <option key={team.team_id} value={team.team_id}>
+                    {team.team_name} ({team.points} pts)
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
               <Label>Valeur d'ajustement</Label>
               <div className="flex gap-2">
                 <Button
@@ -1383,7 +1456,7 @@ const Admin = () => {
                 </Button>
               </div>
               <p className="text-xs text-slate-400">
-                Nouveaux points: {Math.max(0, (selectedTeamData?.points || 0) + pointsAdjustValue)}
+                Nouveaux points: {Math.max(0, (teams.find((t) => t.team_id === pointsAdjustTeam)?.points || 0) + pointsAdjustValue)}
               </p>
             </div>
           </div>

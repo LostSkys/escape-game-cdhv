@@ -1022,13 +1022,13 @@ ON CONFLICT (username) DO NOTHING;
 -- 2. Create 12 Rooms
 INSERT INTO public.rooms (room_number, room_type, title, description, unlock_code, room_hint, is_active) VALUES
 (1, 'QUESTION', 'Salle 1 - Accueil', 'La salle d''accueil CDHV', 'SALLE01', 'Cherchez dans l''entrée principale', true),
-(2, 'QUESTION', 'Salle 2 - Bureau', 'Le bureau privé', 'SALLE02', 'Cherchez à gauche au 1er étage', true),
-(3, 'QUESTION', 'Salle 3 - Réunion', 'La salle de réunion principale', 'SALLE03', 'Au cœur du bâtiment', true),
-(4, 'QUESTION', 'Salle 4 - Cérémonie', 'Salle de cérémonie', 'SALLE04', 'Un moment spécial vous attend', true),
-(5, 'QUESTION', 'Salle 5 - Laboratoire', 'Le laboratoire de recherche', 'SALLE05', 'À l''étage -1', true),
-(6, 'QUESTION', 'Salle 6 - Bibliothèque', 'La bibliothèque interne', 'SALLE06', 'Montez à l''étage 2', true),
-(7, 'QUESTION', 'Salle 7 - Serveurs', 'Salle informatique', 'SALLE07', 'Dans les sous-sols', true),
-(8, 'QUESTION', 'Salle 8 - Révélation', 'Salle de révélation', 'SALLE08', 'Un secret se dévoile', true),
+(2, 'QUESTION', 'Salle 2 - Massif', 'Sale sur le massif des Vosges', 'SALLE02', 'Chercher à droite de l\'accueil', true),
+(3, 'QUESTION', 'Salle 3 - 5 sens', 'A la découverte des 5 sens', 'SALLE03', 'Pas très loin du labo et du massif !', true),
+(4, 'QUESTION', 'Salle 4 - Labo', 'Le labo des bonbons', 'SALLE04', 'Un moment spécial vous attend', true),
+(5, 'QUESTION', 'Salle 5 - Jardin', 'Le jardin secret', 'SALLE05', 'Dans le coin sud-est du jardin', true),
+(6, 'QUESTION', 'Salle 6 - Cinéma', 'Le cinéma des délices', 'SALLE06', 'Juste à côté du labo', true),
+(7, 'QUESTION', 'Salle 7 - Atelier fab', 'L''atelier de fabrication', 'SALLE07', 'Découvrer cet espace unique !', true),
+(8, 'QUESTION', 'Salle 8 - Atelier d\'antan', 'Salle de révélation', 'SALLE08', 'Un renouveau des labos', true),
 (9, 'QUESTION', 'Salle 9 - Archives', 'Les archives historiques', 'SALLE09', 'Dans le grenier du bâtiment', true),
 (10, 'QUESTION', 'Salle 10 - Rooftop', 'Le toit du bâtiment', 'SALLE10', 'Montez au sommet', true),
 (11, 'QUESTION', 'Salle 11 - Trésor', 'La chambre au trésor', 'SALLE11', 'Derrière la porte dorée', true),
@@ -1041,11 +1041,11 @@ SELECT id, 1, 1, ARRAY['SUPERBIEN', 'CORRECT1'], 'Quel est le mot code pour dém
 
 -- Room 2: QUESTION (4 questions + mini-jeu + énigme)
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 1, 2, ARRAY['SECRET'], 'Quel mot secret apparaît dans le bureau ?', 'Q2-1', 'Q2-1', 'Regardez l''affiche sur le mur.', false, NULL FROM public.rooms WHERE room_number = 2;
+SELECT id, 1, 2, ARRAY['Le grand tétras', 'tétras', 'TÉTRAS', 'TETRAS', 'GRAND TETRAS', 'GRAND TÉTRAS'], 'Quel animal emblématique des Vosges est représenté sur la table devant vous ? ', 'Q2-1', 'Q2-1', 'on en croise dans les forêts de conifères', false, NULL FROM public.rooms WHERE room_number = 2;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 2, 2, ARRAY['PAPIER'], 'Quel mot est écrit sur le dossier noir ?', 'Q2-2', 'Q2-2', 'Le dossier éclaire la réponse.', false, NULL FROM public.rooms WHERE room_number = 2;
+SELECT id, 2, 2, ARRAY['Sapin', 'SAPIN'], 'Citez toutes les plantes des vosges utilisées dans nos bonbons', 'Q2-2', 'Q2-2', 'chercher les saveurs dans la salle', false, NULL FROM public.rooms WHERE room_number = 2;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 3, 2, ARRAY['STYLO'], 'Quel est l''objet le plus utile sur le bureau ?', 'Q2-3', 'Q2-3', 'Cherchez autour du clavier.', false, NULL FROM public.rooms WHERE room_number = 2;
+SELECT id, 3, 2, ARRAY['700', '700m', '700M'], 'À quelle altitude moyenne se situe la confiserie ?', 'Q2-3', 'Q2-3', 'Regardez la carte des Vosges et trouvez notre emplacement.', false, NULL FROM public.rooms WHERE room_number = 2;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
 SELECT id, 4, 2, ARRAY['CLÉ'], 'Quel mot clé est caché sous l''ordinateur ?', 'Q2-4', 'Q2-4', 'Ouvrez la cassette secrète.', false, NULL FROM public.rooms WHERE room_number = 2;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
