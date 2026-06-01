@@ -98,6 +98,7 @@ interface HintProgression {
 interface RoomGuideQuestion {
   prompt: string;
   hint: string;
+  answer: string;
 }
 
 interface RoomGuide {
@@ -107,11 +108,13 @@ interface RoomGuide {
   mini_game: {
     rules: string;
     attention: string;
+    answer: string;
   };
   questions: RoomGuideQuestion[];
   mini_game_end: {
     title: string;
     hints: string;
+    answer: string;
   };
 }
 
@@ -123,16 +126,19 @@ const roomGuides: RoomGuide[] = [
     mini_game: {
       rules: "Aucun mini-jeu dans cette salle.",
       attention: "Restez clair sur le premier indice.",
+      answer: "rien à trouver dans cette salle, le mot de départ est donné dès l'accueil",
     },
     questions: [
       {
         prompt: "Question 1 : En quelle année a été créée la confiserie ? ",
         hint: "Dirigez-les vers l'entrée principale.",
+        answer: "1986",
       },
     ],
     mini_game_end: {
       title: "Pas de mini-jeu (fin) pour cette salle",
       hints: "La salle de démarrage est simple : concentrez-vous sur l'accueil.",
+      answer: "aucun mot a trouver dans cette salle, le mot de départ est donné dès l'accueil",
     },
   },
   {
@@ -142,28 +148,34 @@ const roomGuides: RoomGuide[] = [
     mini_game: {
       rules: "Mini-jeu : organisez les objets du bureau dans le bon ordre.",
       attention: "Attention à l'ordre, une seule combinaison est correcte.",
+      answer: "ORDRE",
     },
     questions: [
       {
         prompt: "Question 1 : Quel animal emblématique des Vosges est représenté sur la table devant vous ? ",
         hint: "on en croise dans les forêts de conifères",
+        answer: "grand tétras",
       },
       {
         prompt: "Question 2 : Citez la plante utiliser dans nos bonbons les plus vendus",
         hint: "Son goût provient d'un grand connifère !",
+        answer: "pin",
       },
       {
         prompt: "Question 3 : À quelle altitude moyenne se situe la confiserie ?",
         hint: "Regardez la carte des Vosges et trouvez notre emplacement.",
+        answer: "700",
       },
       {
         prompt: "Question 4 : quel est le plus haut sommet de la chaîne des Vosges ?",
         hint: "Faites-les regarder la carte.",
+        answer: "Le grand ballon",
       },
     ],
     mini_game_end: {
       title: "Mini-jeu (fin) 2 : mot final du bureau",
       hints: "Reliez les indices des quatre questions précédentes.",
+      answer: "ORDRE",
     },
   },
   {
@@ -173,28 +185,34 @@ const roomGuides: RoomGuide[] = [
     mini_game: {
       rules: "Mini-jeu : alignez les documents dans le bon ordre.",
       attention: "Attention à l'ordre logique des éléments.",
+      answer: "LOGIQUE",
     },
     questions: [
       {
         prompt: "Question 1 : mot clé dans l'agenda",
         hint: "Invitez-les à consulter l'agenda et les sujets.",
+        answer: "stratégie",
       },
       {
         prompt: "Question 2 : objet mentionné dans le procès-verbal",
         hint: "Montrez le procès-verbal et cherchez un objet spécifique.",
+        answer: "objet spécifique",
       },
       {
         prompt: "Question 3 : mot près de la prise",
         hint: "Encouragez-les à inspecter les prises et les câbles.",
+        answer: "mot près de la prise",
       },
       {
         prompt: "Question 4 : terme technique sur la feuille",
         hint: "Cherchez les mots techniques sur les documents.",
+        answer: "terme technique",
       },
     ],
     mini_game_end: {
       title: "Mini-jeu (fin) 3 : mot de la réunion",
       hints: "Les indices sont dans la salle et les documents.",
+      answer: "LOGIQUE",
     },
   },
   {
@@ -204,24 +222,29 @@ const roomGuides: RoomGuide[] = [
     mini_game: {
       rules: "Mini-jeu : ordonnez les éléments du rituel.",
       attention: "Attention à ne pas inverser l'ordre des étapes.",
+      answer: "RITUEL",
     },
     questions: [
       {
         prompt: "Question 1 : mot du début de la cérémonie",
         hint: "Mettez-les en condition en parlant du rituel.",
+        answer: "début",
       },
       {
         prompt: "Question 2 : mot sur l'offrande",
         hint: "Faites-les observer l'offrande et ses détails.",
+        answer: "offrande",
       },
       {
         prompt: "Question 3 : mot sur la banderole",
         hint: "Indiquez la banderole comme élément clé.",
+        answer: "banderole",
       },
     ],
     mini_game_end: {
       title: "Mini-jeu (fin) 4 : mot de la cérémonie",
       hints: "Les paroles et la musique cachent la clé.",
+      answer: "RITUEL",
     },
   },
   {
@@ -231,24 +254,29 @@ const roomGuides: RoomGuide[] = [
     mini_game: {
       rules: "Mini-jeu : associez les formules et les symboles.",
       attention: "Attention à la bonne correspondance entre formules.",
+      answer: "FORMULE",
     },
     questions: [
       {
         prompt: "Question 1 : mot du tableau blanc",
         hint: "Dirigez-les vers le tableau et les annotations.",
+        answer: "tableau blanc",
       },
       {
         prompt: "Question 2 : composé mentionné dans les notes",
         hint: "Faites-les chercher le bon nom de produit.",
+        answer: "composé",
       },
       {
         prompt: "Question 3 : mot du carnet du chercheur",
         hint: "Recherchez la note écrite à la lumière.",
+        answer: "carnet",
       },
     ],
     mini_game_end: {
       title: "Mini-jeu (fin) 5 : mot de la salle laboratoire",
       hints: "Combinez les indices scientifiques.",
+      answer: "FORMULE",
     },
   },
   {
@@ -258,24 +286,29 @@ const roomGuides: RoomGuide[] = [
     mini_game: {
       rules: "Mini-jeu : triez les livres par thème.",
       attention: "Attention à classer chaque livre correctement.",
+      answer: "THÈME",
     },
     questions: [
       {
         prompt: "Question 1 : mot dans le catalogue",
         hint: "Invitez-les à regarder le catalogue des livres.",
+        answer: "catalogue",
       },
       {
         prompt: "Question 2 : mot sur la première page",
         hint: "Concentrez-les sur la première page du bon livre.",
+        answer: "première page",
       },
       {
         prompt: "Question 3 : mot de la note de lecture",
         hint: "Cherchez la conclusion de la note.",
+        answer: "note de lecture",
       },
     ],
     mini_game_end: {
       title: "Mini-jeu (fin) 6 : mot de la couverture",
       hints: "Le mot est caché dans la couverture imprimée.",
+      answer: "THÈME",
     },
   },
   {
@@ -285,28 +318,34 @@ const roomGuides: RoomGuide[] = [
     mini_game: {
       rules: "Mini-jeu : reconnectez les bons câbles.",
       attention: "Attention, un câble mal branché change tout.",
+      answer: "CONNEXION",
     },
     questions: [
       {
         prompt: "Question 1 : mot sur le serveur principal",
         hint: "Faites-les inspecter le serveur et les voyants.",
+        answer: "serveur principal",
       },
       {
         prompt: "Question 2 : mot sur le câble rouge",
         hint: "Concentrez-les sur les câbles colorés.",
+        answer: "câble rouge",
       },
       {
         prompt: "Question 3 : mot dans le manuel réseau",
         hint: "Cherchez le manuel et le terme réseau.",
+        answer: "terme réseau",
       },
       {
         prompt: "Question 4 : mot près du port Ethernet",
         hint: "Observez les ports et leur étiquetage.",
+        answer: "port Ethernet",
       },
     ],
     mini_game_end: {
       title: "Mini-jeu (fin) 7 : mot de la salle serveur",
       hints: "Cherchez près des racks et des étiquettes.",
+      answer: "CONNEXION",
     },
   },
   {
@@ -316,28 +355,34 @@ const roomGuides: RoomGuide[] = [
     mini_game: {
       rules: "Mini-jeu : recombinez les fragments révélés.",
       attention: "Attention à la cohérence des fragments.",
+      answer: "RÉVÉLATION",
     },
     questions: [
       {
         prompt: "Question 1 : mot du reflet",
         hint: "Montrez le miroir et le reflet à analyser.",
+        answer: "reflet",
       },
       {
         prompt: "Question 2 : mot de la petite clé",
         hint: "Faites-les examiner la clé et son gravure.",
+        answer: "petite clé",
       },
       {
         prompt: "Question 3 : mot des ombres",
         hint: "Observez les ombres et les formes projetées.",
+        answer: "ombres",
       },
       {
         prompt: "Question 4 : mot du symbole au sol",
         hint: "Demandez-leur de suivre la trajectoire dessinée.",
+        answer: "symbole au sol",
       },
     ],
     mini_game_end: {
       title: "Mini-jeu (fin) 8 : mot de la révélation",
       hints: "Reliez la chronologie des indices.",
+      answer: "RÉVÉLATION",
     },
   },
   {
@@ -347,24 +392,29 @@ const roomGuides: RoomGuide[] = [
     mini_game: {
       rules: "Mini-jeu : reconstituez le code de classement.",
       attention: "Attention aux codes similaires.",
+      answer: "CLASSEMENT",
     },
     questions: [
       {
         prompt: "Question 1 : mot dans les archives",
         hint: "Cherchez les vieux dossiers.",
+        answer: "vieux dossiers",
       },
       {
         prompt: "Question 2 : mot sur la boîte de documents",
         hint: "Inspectez l'étiquette de la boîte.",
+        answer: "boîte de documents",
       },
       {
         prompt: "Question 3 : mot du panneau de silence",
         hint: "Ecoutez le silence et lisez le panneau.",
+        answer: "panneau de silence",
       },
     ],
     mini_game_end: {
       title: "Mini-jeu (fin) 9 : mot du coffre des archives",
       hints: "Indexez les dates et trouvez la combinaison.",
+      answer: "CLASSEMENT",
     },
   },
   {
@@ -374,28 +424,34 @@ const roomGuides: RoomGuide[] = [
     mini_game: {
       rules: "Mini-jeu : trouvez la bonne combinaison de panneaux.",
       attention: "Attention aux panneaux qui se ressemblent.",
+      answer: "COMBINAISON",
     },
     questions: [
       {
         prompt: "Question 1 : mot du panneau du rooftop",
         hint: "Regardez le panneau extérieur.",
+        answer: "panneau du rooftop",
       },
       {
         prompt: "Question 2 : mot gravé sur la rampe",
         hint: "Suivez la rampe jusqu'au mot.",
+        answer: "gravure sur la rampe",
       },
       {
         prompt: "Question 3 : mot associé à la lune",
         hint: "Cherchez la lune sur les décorations.",
+        answer: "lune",
       },
       {
         prompt: "Question 4 : mot de la clé du toit",
         hint: "Inspectez la zone sous le toit.",
+        answer: "clé du toit",
       },
     ],
     mini_game_end: {
       title: "Mini-jeu (fin) 10 : mot de l'aventure sur le toit",
       hints: "Assemblez la carte et les indices météo.",
+      answer: "COMBINAISON",
     },
   },
   {
@@ -405,16 +461,19 @@ const roomGuides: RoomGuide[] = [
     mini_game: {
       rules: "Aucun mini-jeu dans cette salle.",
       attention: "Restez attentif à la phrase-clé.",
+      answer: "aucun mot a trouver dans cette salle, le mot final est révélé dans la phrase-clé",
     },
     questions: [
       {
         prompt: "Question 1 : mot du trésor",
         hint: "Concentrez-vous sur le coffre et les symboles.",
+        answer: "trésor",
       },
     ],
     mini_game_end: {
       title: "Pas de mini-jeu (fin) pour cette salle",
       hints: "Cette salle est purement décorative.",
+      answer: "aucun mot a trouver dans cette salle, le mot final est révélé dans la phrase-clé",
     },
   },
 ];

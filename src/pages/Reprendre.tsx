@@ -17,7 +17,7 @@ const Reprendre = () => {
     e.preventDefault();
     if (!name.trim()) return;
     setLoading(true);
-    const { data, error } = await supabase.rpc("find_team_by_name", { p_name: name });
+    const { data, error } = await supabase.rpc("get_admin_team", { p_admin_id: name });
     setLoading(false);
     if (error) { toast.error("Erreur de connexion"); return; }
     const team = (data as any[])?.[0];
