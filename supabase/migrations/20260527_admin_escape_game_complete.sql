@@ -1,9 +1,5 @@
--- ============================================================================
--- ADMIN ESCAPE GAME V3 - COMPLETE REDESIGN (All-in-One Migration)
 -- Date: 2026-05-26
--- Description: Full admin system with 12 rooms, 4 admin accounts, all RPC functions
--- ============================================================================
-
+-- Description: Full admin system with 11 rooms, 4 admin accounts, all RPC functions
 -- ============================================================================
 -- PHASE 1: CLEANUP (Drop all old objects)
 -- ============================================================================
@@ -31,7 +27,6 @@ DROP FUNCTION IF EXISTS public.validate_question_answer(uuid, uuid, text) CASCAD
 DROP FUNCTION IF EXISTS public.unlock_room(uuid, uuid, text) CASCADE;
 DROP FUNCTION IF EXISTS public.get_team_hints(uuid) CASCADE;
 DROP FUNCTION IF EXISTS public.get_team_accumulated_story(uuid, uuid) CASCADE;
-DROP FUNCTION IF EXISTS public.submit_event_code(text, uuid) CASCADE;
 DROP FUNCTION IF EXISTS public.finish_game_v2(uuid, uuid) CASCADE;
 DROP FUNCTION IF EXISTS public.get_team_progress_detailed(uuid, uuid) CASCADE;
 DROP FUNCTION IF EXISTS public.get_team_rooms_progress(uuid, uuid) CASCADE;
@@ -116,11 +111,11 @@ CREATE TABLE public.admin_teams (
   PRIMARY KEY (admin_id, team_id)
 );
 
--- 5. Rooms (12 salles)
+-- 5. Rooms (11 salles)
 CREATE TABLE public.rooms (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   room_number INTEGER UNIQUE NOT NULL,
-  room_type TEXT NOT NULL, -- 'QUESTION' or 'EVENT'
+  room_type TEXT NOT NULL, -- 'QUESTION'
   title TEXT NOT NULL,
   description TEXT,
   unlock_code TEXT UNIQUE,
@@ -406,7 +401,8 @@ RETURNS TABLE (
   incorrect_answers INTEGER,
   rooms_completed INTEGER,
   total_rooms INTEGER,
-  members TEXT
+  members TEXT,
+  created_by_admin TEXT
 )
 LANGUAGE sql
 SECURITY DEFINER
@@ -422,7 +418,8 @@ AS $$
     COALESCE(al.incorrect, 0),
     COALESCE(th.rooms_completed, 0),
     (SELECT COUNT(*) FROM public.rooms),
-    COALESCE(tm.members, '')
+    COALESCE(tm.members, ''),
+    COALESCE(at.created_by_admin, 'Inconnu')
   FROM public.teams t
   LEFT JOIN LATERAL (
     SELECT
@@ -442,6 +439,12 @@ AS $$
     FROM public.team_members
     WHERE team_id = t.id
   ) tm ON true
+  LEFT JOIN LATERAL (
+    SELECT STRING_AGG(a.name, ', ' ORDER BY a.name) AS created_by_admin
+    FROM public.admin_teams at
+    JOIN public.admins a ON a.id = at.admin_id
+    WHERE at.team_id = t.id
+  ) at ON true
   WHERE p_team_id IS NULL OR t.id = p_team_id
   ORDER BY t.points DESC;
 $$;
@@ -603,8 +606,7 @@ RETURNS TABLE (
   description TEXT,
   unlock_code TEXT,
   room_hint TEXT,
-  is_active BOOLEAN,
-  event_story_chapter TEXT
+  is_active BOOLEAN
 )
 LANGUAGE sql
 SECURITY DEFINER
@@ -619,8 +621,7 @@ AS $$
     r.description,
     r.unlock_code,
     r.room_hint,
-    r.is_active,
-    CASE WHEN r.room_type = 'EVENT' THEN a.history_piece ELSE NULL END
+    r.is_active
   FROM public.rooms r
   LEFT JOIN public.answers a ON a.room_id = r.id
   WHERE r.unlock_code = p_code
@@ -884,55 +885,7 @@ AS $$
 $$;
 
 -- 11. Submit Event Code
-CREATE OR REPLACE FUNCTION public.submit_event_code(p_code TEXT, p_team_id UUID)
-RETURNS TABLE (ok BOOLEAN)
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  v_room_id UUID;
-  v_room_order INTEGER;
-  v_hint_piece TEXT;
-  v_history_piece TEXT;
-  v_includes_history BOOLEAN;
-BEGIN
-  SELECT r.id, r.room_number, a.hint_piece, a.history_piece, a.includes_history
-  INTO v_room_id, v_room_order, v_hint_piece, v_history_piece, v_includes_history
-  FROM public.rooms r
-  JOIN public.answers a ON a.room_id = r.id
-  WHERE r.unlock_code = p_code
-    AND r.room_type = 'EVENT'
-  LIMIT 1;
-
-  IF NOT FOUND THEN
-    RETURN QUERY SELECT false;
-    RETURN;
-  END IF;
-
-  INSERT INTO public.team_hints (team_id, room_order, hint_pieces, history_pieces, all_correct, completed_at)
-  VALUES (
-    p_team_id,
-    v_room_order,
-    ARRAY[v_hint_piece],
-    CASE WHEN v_includes_history THEN ARRAY[v_history_piece] ELSE '{}'::TEXT[] END,
-    true,
-    now()
-  )
-  ON CONFLICT (team_id, room_order) DO UPDATE
-  SET
-    hint_pieces = array_cat(team_hints.hint_pieces, ARRAY[v_hint_piece]),
-    history_pieces = CASE
-      WHEN v_includes_history
-      THEN array_cat(team_hints.history_pieces, ARRAY[v_history_piece])
-      ELSE team_hints.history_pieces
-    END,
-    all_correct = true,
-    completed_at = now();
-
-  RETURN QUERY SELECT true;
-END;
-$$;
+-- Removed: event-based rooms and handling are no longer used in this deployment.
 
 -- 12. Get Team Hints
 CREATE OR REPLACE FUNCTION public.get_team_hints(p_team_id UUID)
@@ -1019,43 +972,42 @@ INSERT INTO public.admins (username, password_hash, name) VALUES
   ('admin4', md5('cdhv-admin-2026-secure-4'), 'Maître du Jeu 4')
 ON CONFLICT (username) DO NOTHING;
 
--- 2. Create 12 Rooms
+-- 2. Create 11 Rooms
 INSERT INTO public.rooms (room_number, room_type, title, description, unlock_code, room_hint, is_active) VALUES
 (1, 'QUESTION', 'Salle 1 - Accueil', 'La salle d''accueil CDHV', 'SALLE01', 'Cherchez dans l''entrée principale', true),
-(2, 'QUESTION', 'Salle 2 - Massif', 'Sale sur le massif des Vosges', 'SALLE02', 'Chercher à droite de l\'accueil', true),
+(2, 'QUESTION', 'Salle 2 - Massif', 'Sale sur le massif des Vosges', 'SALLE02', 'Chercher à droite de l''accueil', true),
 (3, 'QUESTION', 'Salle 3 - 5 sens', 'A la découverte des 5 sens', 'SALLE03', 'Pas très loin du labo et du massif !', true),
 (4, 'QUESTION', 'Salle 4 - Labo', 'Le labo des bonbons', 'SALLE04', 'Un moment spécial vous attend', true),
 (5, 'QUESTION', 'Salle 5 - Jardin', 'Le jardin secret', 'SALLE05', 'Dans le coin sud-est du jardin', true),
 (6, 'QUESTION', 'Salle 6 - Cinéma', 'Le cinéma des délices', 'SALLE06', 'Juste à côté du labo', true),
 (7, 'QUESTION', 'Salle 7 - Atelier fab', 'L''atelier de fabrication', 'SALLE07', 'Découvrer cet espace unique !', true),
-(8, 'QUESTION', 'Salle 8 - Atelier d\'antan', 'Salle de révélation', 'SALLE08', 'Un renouveau des labos', true),
-(9, 'QUESTION', 'Salle 9 - Archives', 'Les archives historiques', 'SALLE09', 'Dans le grenier du bâtiment', true),
-(10, 'QUESTION', 'Salle 10 - Rooftop', 'Le toit du bâtiment', 'SALLE10', 'Montez au sommet', true),
-(11, 'QUESTION', 'Salle 11 - Trésor', 'La chambre au trésor', 'SALLE11', 'Derrière la porte dorée', true),
-(12, 'QUESTION', 'Salle 12 - Finale', 'Salle finale', 'SALLE12', 'L''aventure se termine', true);
+(8, 'QUESTION', 'Salle 8 - Atelier d''antan', 'L''atelier d''antan', 'SALLE08', 'Venez découvrir cet espace nouveau !', true),
+(9, 'QUESTION', 'Salle 9 - Magasin éphémère', 'Le magasin éphémère', 'SALLE09', 'derrière le batiment', true),
+(10, 'QUESTION', 'Salle 10 - repos', 'La salle de repos', 'SALLE10', 'Montez a l''étage', true),
+(11, 'QUESTION', 'Salle 11 - Trésor', 'La chambre au trésor', 'SALLE11', 'La fin de l''aventure', true);
 
 -- 3. Create Sample Answers/Hints for each room
 -- Room 1: QUESTION
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 1, 1, ARRAY['SUPERBIEN', 'CORRECT1'], 'Quel est le mot code pour démarrer l''escape game ?', 'SA', 'SA', 'Commencez avec l''entrée principale.', false, NULL FROM public.rooms WHERE room_number = 1;
+SELECT id, 1, 1, ARRAY['1986'], 'En quelle année a été créée la confiserie ? ', 'SA', 'SA', 'Commencez avec l''entrée principale.', false, NULL FROM public.rooms WHERE room_number = 1;
 
 -- Room 2: QUESTION (4 questions + mini-jeu + énigme)
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 1, 2, ARRAY['Le grand tétras', 'tétras', 'TÉTRAS', 'TETRAS', 'GRAND TETRAS', 'GRAND TÉTRAS'], 'Quel animal emblématique des Vosges est représenté sur la table devant vous ? ', 'Q2-1', 'Q2-1', 'on en croise dans les forêts de conifères', false, NULL FROM public.rooms WHERE room_number = 2;
+SELECT id, 1, 2, ARRAY['ORDRE', 'BON ORDRE', 'COMBINAISON', 'LA BONNE COMBINAISON'], 'Mini-jeu : décidez le bon ordre des objets.', 'MINI-2', 'ORDRE', 'Une combinaison doit être trouvée.', false, NULL FROM public.rooms WHERE room_number = 2;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 2, 2, ARRAY['Sapin', 'SAPIN'], 'Citez toutes les plantes des vosges utilisées dans nos bonbons', 'Q2-2', 'Q2-2', 'chercher les saveurs dans la salle', false, NULL FROM public.rooms WHERE room_number = 2;
+SELECT id, 2, 2, ARRAY['Le grand tétras', 'tétras', 'TÉTRAS', 'TETRAS', 'GRAND TETRAS', 'GRAND TÉTRAS'], 'Quel animal emblématique des Vosges est représenté sur la table devant vous ? ', 'Q2-1', 'Q2-1', 'on en croise dans les forêts de conifères', false, NULL FROM public.rooms WHERE room_number = 2;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 3, 2, ARRAY['700', '700m', '700M'], 'À quelle altitude moyenne se situe la confiserie ?', 'Q2-3', 'Q2-3', 'Regardez la carte des Vosges et trouvez notre emplacement.', false, NULL FROM public.rooms WHERE room_number = 2;
+SELECT id, 3, 2, ARRAY['Sapin', 'SAPIN'], 'Citez la plante utiliser dans nos bonbons les plus vendus', 'Q2-2', 'Q2-2', 'Son goût provient d''un grand connifère !', false, NULL FROM public.rooms WHERE room_number = 2;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 4, 2, ARRAY['CLÉ'], 'Quel mot clé est caché sous l''ordinateur ?', 'Q2-4', 'Q2-4', 'Ouvrez la cassette secrète.', false, NULL FROM public.rooms WHERE room_number = 2;
+SELECT id, 4, 2, ARRAY['700', '700m', '700M'], 'À quelle altitude moyenne se situe la confiserie ?', 'Q2-3', 'Q2-3', 'Regardez la carte des Vosges et trouvez notre emplacement.', false, NULL FROM public.rooms WHERE room_number = 2;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 5, 2, ARRAY['JEU'], 'Mini-jeu : décidez le bon ordre des objets.', 'MINI-2', NULL, 'Une combinaison doit être trouvée.', false, NULL FROM public.rooms WHERE room_number = 2;
+SELECT id, 5, 2, ARRAY['CLÉ'], 'Quel est le plus haut sommet de la chaîne des Vosges ?', 'Q2-4', 'Q2-4', 'Faites-les regarder la carte.', false, NULL FROM public.rooms WHERE room_number = 2;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 6, 2, ARRAY['ÉNIGME'], 'Énigme : quel mot termine la phrase ?', 'ENIG2', NULL, 'Reliez les indices précédents.', false, NULL FROM public.rooms WHERE room_number = 2;
+SELECT id, 6, 2, ARRAY['BUREAU'], 'Mini-jeu (fin) : quel mot termine la phrase ?', 'MINI-2-end', NULL, 'Reliez les indices précédents.', false, NULL FROM public.rooms WHERE room_number = 2;
 
 -- Room 3: QUESTION (4 questions + mini-jeu + énigme)
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 1, 3, ARRAY['ENIGME'], 'Quel mot clé de réunion apparaît dans l''agenda ?', 'Q3-1', 'Q3-1', 'Vérifiez l''ordre des sujets.', false, NULL FROM public.rooms WHERE room_number = 3;
+SELECT id, 1, 3, ARRAY['ORDRE', 'ORDRE DU JOUR', 'ORDREDUJOUR'], 'Mini-jeu (début) : Quel mot clé de réunion apparaît dans l''agenda ?', 'MINI-3-start', 'ORDRE', 'Vérifiez l''ordre des sujets.', false, NULL FROM public.rooms WHERE room_number = 3;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
 SELECT id, 2, 3, ARRAY['TABLE'], 'Quel objet est mentionné dans le procès-verbal ?', 'Q3-2', 'Q3-2', 'Cherchez le mobilier décrit.', false, NULL FROM public.rooms WHERE room_number = 3;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
@@ -1063,106 +1015,102 @@ SELECT id, 3, 3, ARRAY['PRISE'], 'Quel mot apparaît près de la prise ?', 'Q3-3
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
 SELECT id, 4, 3, ARRAY['CIRCUIT'], 'Quel terme technique est inscrit sur la feuille ?', 'Q3-4', 'Q3-4', 'Suivez le fil conducteur.', false, NULL FROM public.rooms WHERE room_number = 3;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 5, 3, ARRAY['JEU'], 'Mini-jeu : alignez les documents dans le bon ordre.', 'MINI-3', NULL, 'L''ordre est la clé.', false, NULL FROM public.rooms WHERE room_number = 3;
+SELECT id, 5, 3, ARRAY['FRAGMENTS', 'DOCUMENTS', 'ORDRE'], 'Mini-jeu : alignez les documents dans le bon ordre.', 'MINI-3', NULL, 'L''ordre est la clé.', false, NULL FROM public.rooms WHERE room_number = 3;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 6, 3, ARRAY['ENIGME'], 'Énigme : quel mot coiffe la réunion ?', 'ENIG3', NULL, 'Reliez tous les éléments vus.', false, NULL FROM public.rooms WHERE room_number = 3;
+SELECT id, 6, 3, ARRAY['REUNION', 'RÉUNION', 'REUNION'], 'Mini-jeu (fin) : quel mot coiffe la réunion ?', 'MINI-3-end', NULL, 'Reliez tous les éléments vus.', false, NULL FROM public.rooms WHERE room_number = 3;
 
 -- Room 4: QUESTION (question + mini-jeu + énigme)
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 1, 4, ARRAY['MYSTERE'], 'Quel mot décrit le début de la cérémonie ?', 'Q4-1', 'Q4-1', 'Cherchez le respect de la tradition.', false, NULL FROM public.rooms WHERE room_number = 4;
+SELECT id, 1, 4, ARRAY['RITUEL', 'ORDRE', 'CEREMONIE'], 'Mini-jeu : ordonnez les éléments du rituel.', 'MINI-4', 'RITUEL', 'L''ordre est important.', false, NULL FROM public.rooms WHERE room_number = 4;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 2, 4, ARRAY['OFFRE'], 'Quel mot apparaît sur l''offrande ?', 'Q4-2', 'Q4-2', 'Regardez près de l''autel.', false, NULL FROM public.rooms WHERE room_number = 4;
+SELECT id, 2, 4, ARRAY['MYSTERE'], 'Quel mot décrit le début de la cérémonie ?', 'Q4-1', 'Q4-1', 'Cherchez le respect de la tradition.', false, NULL FROM public.rooms WHERE room_number = 4;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 3, 4, ARRAY['CHANT'], 'Quel mot est inscrit sur la banderole ?', 'Q4-3', 'Q4-3', 'Les paroles du chant contiennent la clé.', false, NULL FROM public.rooms WHERE room_number = 4;
+SELECT id, 3, 4, ARRAY['OFFRE'], 'Quel mot apparaît sur l''offrande ?', 'Q4-2', 'Q4-2', 'Regardez près de l''autel.', false, NULL FROM public.rooms WHERE room_number = 4;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 4, 4, ARRAY['MINI'], 'Mini-jeu : ordonnez les éléments du rituel.', 'MINI-4', NULL, 'L''ordre est important.', false, NULL FROM public.rooms WHERE room_number = 4;
+SELECT id, 4, 4, ARRAY['CHANT'], 'Quel mot est inscrit sur la banderole ?', 'Q4-3', 'Q4-3', 'Les paroles du chant contiennent la clé.', false, NULL FROM public.rooms WHERE room_number = 4;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 5, 4, ARRAY['ENIGME'], 'Énigme : quel mot verrouille la cérémonie ?', 'ENIG4', NULL, 'Assemblez les indices précédents.', false, NULL FROM public.rooms WHERE room_number = 4;
+SELECT id, 5, 4, ARRAY['CEREMONIE', 'CÉRÉMONIE'], 'Mini-jeu (fin) : quel mot verrouille la cérémonie ?', 'MINI-4-end', NULL, 'Assemblez les indices précédents.', false, NULL FROM public.rooms WHERE room_number = 4;
 
 -- Room 5: QUESTION (3 questions + mini-jeu + énigme)
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 1, 5, ARRAY['LABO'], 'Quel mot caché apparaît sur le tableau blanc ?', 'Q5-1', 'Q5-1', 'Regardez les notes laissées.', false, NULL FROM public.rooms WHERE room_number = 5;
+SELECT id, 1, 5, ARRAY['FORMULES', 'SYMBOLS', 'ASSOCIATION'], 'Mini-jeu : associez les formules et les symboles.', 'MINI-5', 'FORMULES', 'Chaque formule a son symbole.', false, NULL FROM public.rooms WHERE room_number = 5;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 2, 5, ARRAY['ACIDE'], 'Quel composé est mentionné dans les notes ?', 'Q5-2', 'Q5-2', 'Les flacons ont la réponse.', false, NULL FROM public.rooms WHERE room_number = 5;
+SELECT id, 2, 5, ARRAY['LABO'], 'Quel mot caché apparaît sur le tableau blanc ?', 'Q5-1', 'Q5-1', 'Regardez les notes laissées.', false, NULL FROM public.rooms WHERE room_number = 5;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 3, 5, ARRAY['LUMIERE'], 'Quel mot est dans le carnet du chercheur ?', 'Q5-3', 'Q5-3', 'Cherchez l''indice écrit à la lumière.', false, NULL FROM public.rooms WHERE room_number = 5;
+SELECT id, 3, 5, ARRAY['ACIDE'], 'Quel composé est mentionné dans les notes ?', 'Q5-2', 'Q5-2', 'Les flacons ont la réponse.', false, NULL FROM public.rooms WHERE room_number = 5;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 4, 5, ARRAY['JEU'], 'Mini-jeu : associez les formules et les symboles.', 'MINI-5', NULL, 'Chaque formule a son symbole.', false, NULL FROM public.rooms WHERE room_number = 5;
+SELECT id, 4, 5, ARRAY['LUMIERE'], 'Quel mot est dans le carnet du chercheur ?', 'Q5-3', 'Q5-3', 'Cherchez l''indice écrit à la lumière.', false, NULL FROM public.rooms WHERE room_number = 5;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 5, 5, ARRAY['ENIGME'], 'Énigme : quel mot verrouille la salle ?', 'ENIG5', NULL, 'Assemblez les indices précédents.', false, NULL FROM public.rooms WHERE room_number = 5;
+SELECT id, 5, 5, ARRAY['LABORATOIRE'], 'Mini-jeu (fin) : quel mot verrouille la salle ?', 'MINI-5-end', NULL, 'Assemblez les indices précédents.', false, NULL FROM public.rooms WHERE room_number = 5;
 
 -- Room 6: QUESTION (3 questions + mini-jeu + énigme)
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 1, 6, ARRAY['BOOK'], 'Quel mot se cache dans le catalogue ?', 'Q6-1', 'Q6-1', 'Feuilletez les bons ouvrages.', false, NULL FROM public.rooms WHERE room_number = 6;
+SELECT id, 1, 6, ARRAY['THEME', 'THÈME', 'CLASSEMENT'], 'Mini-jeu : triez les livres par thème.', 'MINI-6', 'THEME', 'La bonne pile révèle le secret.', false, NULL FROM public.rooms WHERE room_number = 6;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 2, 6, ARRAY['PAGE'], 'Quel mot est écrit sur la première page ?', 'Q6-2', 'Q6-2', 'Ouvrez le livre au bon endroit.', false, NULL FROM public.rooms WHERE room_number = 6;
+SELECT id, 2, 6, ARRAY['BOOK'], 'Quel mot se cache dans le catalogue ?', 'Q6-1', 'Q6-1', 'Feuilletez les bons ouvrages.', false, NULL FROM public.rooms WHERE room_number = 6;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 3, 6, ARRAY['LECTURE'], 'Quel mot conclut la note de lecture ?', 'Q6-3', 'Q6-3', 'Le résumé contient la réponse.', false, NULL FROM public.rooms WHERE room_number = 6;
+SELECT id, 3, 6, ARRAY['PAGE'], 'Quel mot est écrit sur la première page ?', 'Q6-2', 'Q6-2', 'Ouvrez le livre au bon endroit.', false, NULL FROM public.rooms WHERE room_number = 6;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 4, 6, ARRAY['JEU'], 'Mini-jeu : triez les livres par thème.', 'MINI-6', NULL, 'La bonne pile révèle le secret.', false, NULL FROM public.rooms WHERE room_number = 6;
+SELECT id, 4, 6, ARRAY['LECTURE'], 'Quel mot conclut la note de lecture ?', 'Q6-3', 'Q6-3', 'Le résumé contient la réponse.', false, NULL FROM public.rooms WHERE room_number = 6;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 5, 6, ARRAY['ENIGME'], 'Énigme : quel mot s''associe à la dernière couverture ?', 'ENIG6', NULL, 'Reliez la couverture au thème.', false, NULL FROM public.rooms WHERE room_number = 6;
+SELECT id, 5, 6, ARRAY['COUVERTURE'], 'Mini-jeu (fin) : quel mot s''associe à la dernière couverture ?', 'MINI-6-end', NULL, 'Reliez la couverture au thème.', false, NULL FROM public.rooms WHERE room_number = 6;
 
 -- Room 7: QUESTION (4 questions + mini-jeu + énigme)
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 1, 7, ARRAY['SERVEUR'], 'Quel mot apparaît sur le serveur principal ?', 'Q7-1', 'Q7-1', 'Regardez les voyants lumineux.', false, NULL FROM public.rooms WHERE room_number = 7;
+SELECT id, 1, 7, ARRAY['CABLES', 'RESEAU', 'RESEAUX', 'CONNEXION'], 'Mini-jeu : réparez le réseau en reconnectant les bons câbles.', 'MINI-7', 'CABLES', 'Chaque câble compte.', false, NULL FROM public.rooms WHERE room_number = 7;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 2, 7, ARRAY['CABLE'], 'Quel mot est gravé sur le câble rouge ?', 'Q7-2', 'Q7-2', 'Suivez le câble jusqu''au boîtier.', false, NULL FROM public.rooms WHERE room_number = 7;
+SELECT id, 2, 7, ARRAY['SERVEUR'], 'Quel mot apparaît sur le serveur principal ?', 'Q7-1', 'Q7-1', 'Regardez les voyants lumineux.', false, NULL FROM public.rooms WHERE room_number = 7;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 3, 7, ARRAY['RÉSEAU'], 'Quel mot se trouve dans le manuel réseau ?', 'Q7-3', 'Q7-3', 'Le manuel explique la connexion.', false, NULL FROM public.rooms WHERE room_number = 7;
+SELECT id, 3, 7, ARRAY['CABLE'], 'Quel mot est gravé sur le câble rouge ?', 'Q7-2', 'Q7-2', 'Suivez le câble jusqu''au boîtier.', false, NULL FROM public.rooms WHERE room_number = 7;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 4, 7, ARRAY['PORT'], 'Quel mot figure près du port Ethernet ?', 'Q7-4', 'Q7-4', 'Vérifiez tous les ports actifs.', false, NULL FROM public.rooms WHERE room_number = 7;
+SELECT id, 4, 7, ARRAY['RÉSEAU'], 'Quel mot se trouve dans le manuel réseau ?', 'Q7-3', 'Q7-3', 'Le manuel explique la connexion.', false, NULL FROM public.rooms WHERE room_number = 7;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 5, 7, ARRAY['JEU'], 'Mini-jeu : réparez le réseau en reconnectant les bons câbles.', 'MINI-7', NULL, 'Chaque câble compte.', false, NULL FROM public.rooms WHERE room_number = 7;
+SELECT id, 5, 7, ARRAY['PORT'], 'Quel mot figure près du port Ethernet ?', 'Q7-4', 'Q7-4', 'Vérifiez tous les ports actifs.', false, NULL FROM public.rooms WHERE room_number = 7;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 6, 7, ARRAY['ENIGME'], 'Énigme : quel mot ouvre la salle serveur ?', 'ENIG7', NULL, 'Rassemblez tous les indices.', false, NULL FROM public.rooms WHERE room_number = 7;
+SELECT id, 6, 7, ARRAY['SERVEUR'], 'Mini-jeu (fin) : quel mot ouvre la salle serveur ?', 'MINI-7-end', NULL, 'Rassemblez tous les indices.', false, NULL FROM public.rooms WHERE room_number = 7;
 
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 1, 8, ARRAY['REFLET'], 'Quel mot apparaît sur le miroir de la salle ?', 'Q8-1', 'Q8-1', 'Observez les reflets.', false, NULL FROM public.rooms WHERE room_number = 8;
+SELECT id, 1, 8, ARRAY['FRAGMENTS', 'REVELATION', 'COMBINAISON'], 'Mini-jeu : recombinez les fragments révélés.', 'MINI-8', 'FRAGMENTS', 'Chaque fragment compte.', false, NULL FROM public.rooms WHERE room_number = 8;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 2, 8, ARRAY['CLEF'], 'Quel mot est gravé sur la petite clé ?', 'Q8-2', 'Q8-2', 'La clé ouvre une caisse.', false, NULL FROM public.rooms WHERE room_number = 8;
+SELECT id, 2, 8, ARRAY['REFLET'], 'Quel mot apparaît sur le miroir de la salle ?', 'Q8-1', 'Q8-1', 'Observez les reflets.', false, NULL FROM public.rooms WHERE room_number = 8;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 3, 8, ARRAY['OMBRE'], 'Quel mot se forme avec les ombres projetées ?', 'Q8-3', 'Q8-3', 'Alignez les projecteurs.', false, NULL FROM public.rooms WHERE room_number = 8;
+SELECT id, 3, 8, ARRAY['CLEF'], 'Quel mot est gravé sur la petite clé ?', 'Q8-2', 'Q8-2', 'La clé ouvre une caisse.', false, NULL FROM public.rooms WHERE room_number = 8;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 4, 8, ARRAY['SIGNE'], 'Quel symbole est dessiné sur le sol ?', 'Q8-4', 'Q8-4', 'Suivez la trajectoire.', false, NULL FROM public.rooms WHERE room_number = 8;
+SELECT id, 4, 8, ARRAY['OMBRE'], 'Quel mot se forme avec les ombres projetées ?', 'Q8-3', 'Q8-3', 'Alignez les projecteurs.', false, NULL FROM public.rooms WHERE room_number = 8;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 5, 8, ARRAY['MINI'], 'Mini-jeu : recombinez les fragments révélés.', 'MINI-8', NULL, 'Chaque fragment compte.', false, NULL FROM public.rooms WHERE room_number = 8;
+SELECT id, 5, 8, ARRAY['SIGNE'], 'Quel symbole est dessiné sur le sol ?', 'Q8-4', 'Q8-4', 'Suivez la trajectoire.', false, NULL FROM public.rooms WHERE room_number = 8;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 6, 8, ARRAY['ENIGME'], 'Énigme : quel mot achève la révélation ?', 'ENIG8', NULL, 'Tous les indices se rejoignent.', false, NULL FROM public.rooms WHERE room_number = 8;
+SELECT id, 6, 8, ARRAY['REVELATION', 'RÉVÉLATION'], 'Mini-jeu (fin) : quel mot achève la révélation ?', 'MINI-8-end', NULL, 'Tous les indices se rejoignent.', false, NULL FROM public.rooms WHERE room_number = 8;
 
 -- Room 9: QUESTION (3 questions + mini-jeu + énigme)
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 1, 9, ARRAY['ARCHIVE'], 'Quel mot apparaît dans les archives ?', 'Q9-1', 'Q9-1', 'Les vieux dossiers contiennent la clé.', false, NULL FROM public.rooms WHERE room_number = 9;
+SELECT id, 1, 9, ARRAY['CLASSEMENT', 'CODE', 'ARCHIVE'], 'Mini-jeu : reconstituez le code de classement.', 'MINI-9', 'CLASSEMENT', 'Chaque code est important.', false, NULL FROM public.rooms WHERE room_number = 9;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 2, 9, ARRAY['PAPIER'], 'Quel mot est inscrit sur la boîte de documents ?', 'Q9-2', 'Q9-2', 'La boîte cache un indice.', false, NULL FROM public.rooms WHERE room_number = 9;
+SELECT id, 2, 9, ARRAY['ARCHIVE'], 'Quel mot apparaît dans les archives ?', 'Q9-1', 'Q9-1', 'Les vieux dossiers contiennent la clé.', false, NULL FROM public.rooms WHERE room_number = 9;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 3, 9, ARRAY['SILENCE'], 'Quel mot apparaît sur le panneau de silence ?', 'Q9-3', 'Q9-3', 'Écoutez le silence des archives.', false, NULL FROM public.rooms WHERE room_number = 9;
+SELECT id, 3, 9, ARRAY['PAPIER'], 'Quel mot est inscrit sur la boîte de documents ?', 'Q9-2', 'Q9-2', 'La boîte cache un indice.', false, NULL FROM public.rooms WHERE room_number = 9;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 4, 9, ARRAY['JEU'], 'Mini-jeu : reconstituez le code de classement.', 'MINI-9', NULL, 'Chaque code est important.', false, NULL FROM public.rooms WHERE room_number = 9;
+SELECT id, 4, 9, ARRAY['SILENCE'], 'Quel mot apparaît sur le panneau de silence ?', 'Q9-3', 'Q9-3', 'Écoutez le silence des archives.', false, NULL FROM public.rooms WHERE room_number = 9;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 5, 9, ARRAY['ENIGME'], 'Énigme : quel mot ouvre le coffre des archives ?', 'ENIG9', NULL, 'Combinez les indexes.', false, NULL FROM public.rooms WHERE room_number = 9;
+SELECT id, 5, 9, ARRAY['ARCHIVES'], 'Mini-jeu (fin) : quel mot ouvre le coffre des archives ?', 'MINI-9-end', NULL, 'Combinez les indexes.', false, NULL FROM public.rooms WHERE room_number = 9;
 
 -- Room 10: QUESTION (4 questions + mini-jeu + énigme)
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 1, 10, ARRAY['TOIT'], 'Quel mot apparaît sur le panneau du rooftop ?', 'Q10-1', 'Q10-1', 'Admirez la vue pour trouver l''indice.', false, NULL FROM public.rooms WHERE room_number = 10;
+SELECT id, 1, 10, ARRAY['PANNEAUX', 'PANNEAU', 'COMBINAISON'], 'Mini-jeu : trouvez la bonne combinaison de panneaux.', 'MINI-10', 'PANNEAUX', 'Les panneaux forment un mot.', false, NULL FROM public.rooms WHERE room_number = 10;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 2, 10, ARRAY['VENT'], 'Quel mot est gravé sur la rampe ?', 'Q10-2', 'Q10-2', 'Le vent porte une réponse.', false, NULL FROM public.rooms WHERE room_number = 10;
+SELECT id, 2, 10, ARRAY['TOIT'], 'Quel mot apparaît sur le panneau du rooftop ?', 'Q10-1', 'Q10-1', 'Admirez la vue pour trouver l''indice.', false, NULL FROM public.rooms WHERE room_number = 10;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 3, 10, ARRAY['LUNE'], 'Quel mot est associé à la lune sur le toit ?', 'Q10-3', 'Q10-3', 'Regardez le ciel nocturne.', false, NULL FROM public.rooms WHERE room_number = 10;
+SELECT id, 3, 10, ARRAY['VENT'], 'Quel mot est gravé sur la rampe ?', 'Q10-2', 'Q10-2', 'Le vent porte une réponse.', false, NULL FROM public.rooms WHERE room_number = 10;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 4, 10, ARRAY['CLE'], 'Quel mot cache la clé du toit ?', 'Q10-4', 'Q10-4', 'La clé est sous le toit.', false, NULL FROM public.rooms WHERE room_number = 10;
+SELECT id, 4, 10, ARRAY['LUNE'], 'Quel mot est associé à la lune sur le toit ?', 'Q10-3', 'Q10-3', 'Regardez le ciel nocturne.', false, NULL FROM public.rooms WHERE room_number = 10;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 5, 10, ARRAY['JEU'], 'Mini-jeu : trouvez la bonne combinaison de panneaux.', 'MINI-10', NULL, 'Les panneaux forment un mot.', false, NULL FROM public.rooms WHERE room_number = 10;
+SELECT id, 5, 10, ARRAY['CLE'], 'Quel mot cache la clé du toit ?', 'Q10-4', 'Q10-4', 'La clé est sous le toit.', false, NULL FROM public.rooms WHERE room_number = 10;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 6, 10, ARRAY['ENIGME'], 'Énigme : quel mot conclut l''aventure sur le toit ?', 'ENIG10', NULL, 'Tous les indices précédents sont nécessaires.', false, NULL FROM public.rooms WHERE room_number = 10;
+SELECT id, 6, 10, ARRAY['AVENTURE'], 'Mini-jeu (fin) : quel mot conclut l''aventure sur le toit ?', 'MINI-10-end', NULL, 'Tous les indices précédents sont nécessaires.', false, NULL FROM public.rooms WHERE room_number = 10;
 
 -- Room 11: QUESTION
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
 SELECT id, 1, 11, ARRAY['TRESOR'], 'Quel est le mot du trésor ?', 'TR', 'TR', 'Le coffre garde la dernière clé.', false, NULL FROM public.rooms WHERE room_number = 11;
-
--- Room 12: QUESTION finale
-INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 1, 12, ARRAY['FIN'], 'Quel est le code final pour conclure l''aventure ?', 'FIN', 'FIN', NULL, false, NULL FROM public.rooms WHERE room_number = 12;
 
 -- ============================================================================
 -- END: Schema complete and seeded

@@ -1,5 +1,5 @@
 -- Enum types
-CREATE TYPE public.step_type AS ENUM ('question', 'enigme', 'minijeu', 'salle');
+CREATE TYPE public.step_type AS ENUM ('question', 'minijeu', 'salle');
 
 -- Teams
 CREATE TABLE public.teams (
@@ -230,8 +230,8 @@ INSERT INTO public.steps (step_order, unlock_code, type, title, content, expecte
  '{"message": "Bravo ! Vous pouvez maintenant accéder à la salle de pause du 1er étage. Demandez à l''hôte sur place le code suivant."}'::jsonb,
  NULL,
  'La salle de pause se trouve à droite des escaliers du 1er étage.'),
-(3, 'CDHV03', 'enigme', 'L''énigme du bâtiment',
- '{"riddle": "Je suis présent à chaque étage, je relie le haut et le bas, sans moi vous monterez à pied. Qui suis-je ?"}'::jsonb,
+(3, 'CDHV03', 'minijeu', 'Mini-jeu du bâtiment',
+ '{"riddle": "Mini-jeu : petit défi présent à chaque étage. Qui suis-je ?"}'::jsonb,
  'ascenseur',
  'Pensez vertical.'),
 (4, 'CDHV04', 'minijeu', 'Quiz éclair CDHV',
@@ -250,7 +250,7 @@ INSERT INTO public.steps (step_order, unlock_code, type, title, content, expecte
  '{"message": "Félicitations ! Rendez-vous sur le rooftop pour la dernière étape. Profitez de la vue !"}'::jsonb,
  NULL,
  'Empruntez l''ascenseur jusqu''au dernier étage.'),
-(7, 'CDHV07', 'enigme', 'L''énigme finale',
- '{"riddle": "Plus on en a, plus on en partage. Qu''est-ce que c''est ?"}'::jsonb,
+(7, 'CDHV07', 'minijeu', 'Mini-jeu final',
+ '{"riddle": "Mini-jeu final : petit défi collaboratif."}'::jsonb,
  'sourire',
  'C''est la signature de l''accueil CDHV.');

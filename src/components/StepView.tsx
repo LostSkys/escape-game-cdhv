@@ -19,7 +19,7 @@ import CountdownHint from "./CountdownHint";
 export type Step = {
   id: string;
   step_order: number;
-  type: "question" | "enigme" | "minijeu" | "salle" | "physique" | "composee";
+  type: "question" | "minijeu" | "salle" | "physique" | "composee";
   title: string;
   content: any;
   hint: string;
@@ -36,7 +36,6 @@ type Props = {
 
 const typeMeta: Record<Step["type"], { icon: any; label: string; color: string }> = {
   question: { icon: HelpCircle, label: "Question", color: "text-accent" },
-  enigme: { icon: Lightbulb, label: "Énigme", color: "text-primary" },
   minijeu: { icon: Puzzle, label: "Minijeu", color: "text-success" },
   salle: { icon: DoorOpen, label: "Accès salle", color: "text-gold" },
   physique: { icon: Footprints, label: "Action physique", color: "text-accent" },
@@ -46,7 +45,7 @@ const typeMeta: Record<Step["type"], { icon: any; label: string; color: string }
 const placeholderFor = (type: Step["type"]) => {
   switch (type) {
     case "question": return "Entrez votre réponse ici...";
-    case "enigme": return "Le mot que vous avez deviné...";
+    case "minijeu": return "Entrez la réponse au mini-jeu...";
     case "physique": return "Réponse trouvée sur place...";
     default: return "Votre réponse...";
   }
@@ -80,7 +79,7 @@ const StepView = ({ step, teamId, teamToken, onCompleted, onCancel, alreadyCompl
 
       {step.type === "salle" && <SalleView step={step} teamId={teamId} teamToken={teamToken} onCompleted={onCompleted} />}
       {step.type === "question" && <AnswerView step={step} teamId={teamId} teamToken={teamToken} onCompleted={onCompleted} />}
-      {step.type === "enigme" && <AnswerView step={step} teamId={teamId} teamToken={teamToken} onCompleted={onCompleted} isRiddle />}
+      {/* 'enigme' removed: riddles are now modeled as minijeu or handled in content */}
       {step.type === "physique" && <AnswerView step={step} teamId={teamId} teamToken={teamToken} onCompleted={onCompleted} isPhysical />}
       {step.type === "minijeu" && <MiniGameView step={step} teamId={teamId} teamToken={teamToken} onCompleted={onCompleted} />}
       {step.type === "composee" && <CompositeView step={step} teamId={teamId} teamToken={teamToken} onCompleted={onCompleted} />}
@@ -96,7 +95,7 @@ const SalleView = ({ step, teamId, teamToken, onCompleted }: GameProps) => {
 
   const handleConfirm = async () => {
     setLoading(true);
-    const { error } = await supabase.rpc("complete_room_step", { p_team_id: teamId, p_token: teamToken, p_step_id: step.id });
+    const { error } = await (supabase as any).rpc("complete_room_step", { p_team_id: teamId, p_token: teamToken, p_step_id: step.id });
     setLoading(false);
     if (error) { toast.error("Erreur"); return; }
     toast.success("Accès enregistré !");
@@ -128,7 +127,7 @@ const AnswerView = ({
     e.preventDefault();
     if (!answer.trim()) return;
     setLoading(true);
-    const { data, error } = await supabase.rpc("validate_step_answer", {
+    const { data, error } = await (supabase as any).rpc("validate_step_answer", {
       p_team_id: teamId, p_token: teamToken, p_step_id: step.id, p_answer: answer,
     });
     setLoading(false);
@@ -188,7 +187,7 @@ const AnswerView = ({
 };
 
 type Sub = {
-  kind: "quiz" | "input" | "enigme";
+  kind: "quiz" | "input" | "minijeu";
   question: string;
   options?: string[];
   hint: string;
@@ -212,7 +211,7 @@ const CompositeView = ({ step, teamId, teamToken, onCompleted }: GameProps) => {
     const ans = sub.kind === "quiz" ? (picked ?? "") : input;
     if (!ans.trim()) return;
     setLoading(true);
-    const { data, error } = await supabase.rpc("validate_substep", {
+    const { data, error } = await (supabase as any).rpc("validate_substep", {
       p_team_id: teamId, p_token: teamToken, p_step_id: step.id, p_sub_index: index, p_answer: ans,
     });
     setLoading(false);
@@ -231,7 +230,7 @@ const CompositeView = ({ step, teamId, teamToken, onCompleted }: GameProps) => {
       setIndex(index + 1);
     } else {
       setFinalLoading(true);
-      const { data, error } = await supabase.rpc("complete_composite_step", {
+      const { data, error } = await (supabase as any).rpc("complete_composite_step", {
         p_team_id: teamId, p_token: teamToken, p_step_id: step.id,
       });
       setFinalLoading(false);
@@ -287,7 +286,7 @@ const CompositeView = ({ step, teamId, teamToken, onCompleted }: GameProps) => {
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={sub.kind === "enigme" ? "Le mot que vous avez deviné..." : "Entrez votre réponse..."}
+              placeholder={sub.kind === "minijeu" ? "Réponse du mini-jeu..." : "Entrez votre réponse..."}
               className="h-12 text-base"
               autoComplete="off"
             />
@@ -343,7 +342,7 @@ const MiniGameView = ({ step, teamId, teamToken, onCompleted }: GameProps) => {
     setLoading(true);
     const payload: Record<number, string> = {};
     questions.forEach((_, i) => { payload[i] = answers[i]; });
-    const { data, error } = await supabase.rpc("validate_minijeu", {
+    const { data, error } = await (supabase as any).rpc("validate_minijeu", {
       p_team_id: teamId, p_token: teamToken, p_step_id: step.id, p_answers: payload as any,
     });
     setLoading(false);

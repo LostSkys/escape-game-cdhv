@@ -65,6 +65,7 @@ interface TeamProgress {
   rooms_completed: number;
   total_rooms: number;
   members: string;
+  created_by_admin: string;
 }
 
 interface LeaderboardEntry {
@@ -103,14 +104,14 @@ interface RoomGuide {
   room_number: number;
   title: string;
   mj: string;
-  questions: RoomGuideQuestion[];
-  enigme: {
-    title: string;
-    hints: string;
-  };
   mini_game: {
     rules: string;
     attention: string;
+  };
+  questions: RoomGuideQuestion[];
+  mini_game_end: {
+    title: string;
+    hints: string;
   };
 }
 
@@ -119,56 +120,60 @@ const roomGuides: RoomGuide[] = [
     room_number: 1,
     title: "Salle 1 - Accueil",
     mj: "Accueillez l'équipe et expliquez le contexte : ils doivent trouver le mot de départ pour lancer l'aventure.",
-    questions: [
-      {
-        prompt: "Question 1 : mot de départ",
-        hint: "Dirigez-les vers l'entrée principale et la phrase d'accueil.",
-      },
-    ],
-    enigme: {
-      title: "Pas d'énigme pour cette salle",
-      hints: "La salle de démarrage est simple : concentrez-vous sur l'accueil.",
-    },
     mini_game: {
       rules: "Aucun mini-jeu dans cette salle.",
       attention: "Restez clair sur le premier indice.",
+    },
+    questions: [
+      {
+        prompt: "Question 1 : En quelle année a été créée la confiserie ? ",
+        hint: "Dirigez-les vers l'entrée principale.",
+      },
+    ],
+    mini_game_end: {
+      title: "Pas de mini-jeu (fin) pour cette salle",
+      hints: "La salle de démarrage est simple : concentrez-vous sur l'accueil.",
     },
   },
   {
     room_number: 2,
     title: "Salle 2 - Massif",
     mj: "Animateur de terrain. Il divise le groupe en deux sous-équipes : les \"pisteurs\" et les \"orienteurs\". Si le groupe piétine, il utilise la boussole pour les guider à haute voix vers le Nord.",
+    mini_game: {
+      rules: "Mini-jeu : organisez les objets du bureau dans le bon ordre.",
+      attention: "Attention à l'ordre, une seule combinaison est correcte.",
+    },
     questions: [
       {
         prompt: "Question 1 : Quel animal emblématique des Vosges est représenté sur la table devant vous ? ",
         hint: "on en croise dans les forêts de conifères",
       },
       {
-        prompt: "Question 2 : Citez toutes les plantes des vosges utilisées dans nos bonbons",
-        hint: "chercher les saveurs dans la sale",
+        prompt: "Question 2 : Citez la plante utiliser dans nos bonbons les plus vendus",
+        hint: "Son goût provient d'un grand connifère !",
       },
       {
         prompt: "Question 3 : À quelle altitude moyenne se situe la confiserie ?",
         hint: "Regardez la carte des Vosges et trouvez notre emplacement.",
       },
       {
-        prompt: "Question 4 : mot caché sous l'ordinateur",
-        hint: "Faites-les regarder sous l'écran.",
+        prompt: "Question 4 : quel est le plus haut sommet de la chaîne des Vosges ?",
+        hint: "Faites-les regarder la carte.",
       },
     ],
-    enigme: {
-      title: "Énigme 2 : mot final du bureau",
+    mini_game_end: {
+      title: "Mini-jeu (fin) 2 : mot final du bureau",
       hints: "Reliez les indices des quatre questions précédentes.",
-    },
-    mini_game: {
-      rules: "Mini-jeu : organisez les objets du bureau dans le bon ordre.",
-      attention: "Attention à l'ordre, une seule combinaison est correcte.",
     },
   },
   {
     room_number: 3,
     title: "Salle 3 - Réunion",
     mj: "Décrivez la salle comme un lieu de réunion où chaque indice est caché dans les documents.",
+    mini_game: {
+      rules: "Mini-jeu : alignez les documents dans le bon ordre.",
+      attention: "Attention à l'ordre logique des éléments.",
+    },
     questions: [
       {
         prompt: "Question 1 : mot clé dans l'agenda",
@@ -187,19 +192,19 @@ const roomGuides: RoomGuide[] = [
         hint: "Cherchez les mots techniques sur les documents.",
       },
     ],
-    enigme: {
-      title: "Énigme 3 : mot de la réunion",
+    mini_game_end: {
+      title: "Mini-jeu (fin) 3 : mot de la réunion",
       hints: "Les indices sont dans la salle et les documents.",
-    },
-    mini_game: {
-      rules: "Mini-jeu : alignez les documents dans le bon ordre.",
-      attention: "Attention à l'ordre logique des éléments.",
     },
   },
   {
     room_number: 4,
     title: "Salle 4 - Cérémonie",
     mj: "Présentez la cérémonie avec sérieux et guidez l'équipe vers les symboles.",
+    mini_game: {
+      rules: "Mini-jeu : ordonnez les éléments du rituel.",
+      attention: "Attention à ne pas inverser l'ordre des étapes.",
+    },
     questions: [
       {
         prompt: "Question 1 : mot du début de la cérémonie",
@@ -214,19 +219,19 @@ const roomGuides: RoomGuide[] = [
         hint: "Indiquez la banderole comme élément clé.",
       },
     ],
-    enigme: {
-      title: "Énigme 4 : mot de la cérémonie",
-      hints: "Assemblez tous les indices pour trouver le mot final.",
-    },
-    mini_game: {
-      rules: "Mini-jeu : ordonnez les éléments du rituel.",
-      attention: "Attention à ne pas inverser l'ordre des étapes.",
+    mini_game_end: {
+      title: "Mini-jeu (fin) 4 : mot de la cérémonie",
+      hints: "Les paroles et la musique cachent la clé.",
     },
   },
   {
     room_number: 5,
     title: "Salle 5 - Laboratoire",
     mj: "Expliquez que le laboratoire contient des indices chimiques et des notes de recherche.",
+    mini_game: {
+      rules: "Mini-jeu : associez les formules et les symboles.",
+      attention: "Attention à la bonne correspondance entre formules.",
+    },
     questions: [
       {
         prompt: "Question 1 : mot du tableau blanc",
@@ -241,19 +246,19 @@ const roomGuides: RoomGuide[] = [
         hint: "Recherchez la note écrite à la lumière.",
       },
     ],
-    enigme: {
-      title: "Énigme 5 : mot de la salle laboratoire",
-      hints: "Combinez les indices des formules et des notes.",
-    },
-    mini_game: {
-      rules: "Mini-jeu : associez les formules et les symboles.",
-      attention: "Attention à la bonne correspondance entre formules.",
+    mini_game_end: {
+      title: "Mini-jeu (fin) 5 : mot de la salle laboratoire",
+      hints: "Combinez les indices scientifiques.",
     },
   },
   {
     room_number: 6,
     title: "Salle 6 - Bibliothèque",
     mj: "Présentez la bibliothèque comme un lieu où les mots se cachent dans les livres.",
+    mini_game: {
+      rules: "Mini-jeu : triez les livres par thème.",
+      attention: "Attention à classer chaque livre correctement.",
+    },
     questions: [
       {
         prompt: "Question 1 : mot dans le catalogue",
@@ -268,19 +273,19 @@ const roomGuides: RoomGuide[] = [
         hint: "Cherchez la conclusion de la note.",
       },
     ],
-    enigme: {
-      title: "Énigme 6 : mot de la couverture",
-      hints: "Reliez la couverture au thème du livre.",
-    },
-    mini_game: {
-      rules: "Mini-jeu : triez les livres par thème.",
-      attention: "Attention à classer chaque livre correctement.",
+    mini_game_end: {
+      title: "Mini-jeu (fin) 6 : mot de la couverture",
+      hints: "Le mot est caché dans la couverture imprimée.",
     },
   },
   {
     room_number: 7,
     title: "Salle 7 - Serveurs",
     mj: "Expliquez que le data center cache des indices dans les câbles et les ports.",
+    mini_game: {
+      rules: "Mini-jeu : reconnectez les bons câbles.",
+      attention: "Attention, un câble mal branché change tout.",
+    },
     questions: [
       {
         prompt: "Question 1 : mot sur le serveur principal",
@@ -299,19 +304,19 @@ const roomGuides: RoomGuide[] = [
         hint: "Observez les ports et leur étiquetage.",
       },
     ],
-    enigme: {
-      title: "Énigme 7 : mot de la salle serveur",
-      hints: "Tous les indices du réseau mènent à ce mot.",
-    },
-    mini_game: {
-      rules: "Mini-jeu : reconnectez les bons câbles.",
-      attention: "Attention, un câble mal branché change tout.",
+    mini_game_end: {
+      title: "Mini-jeu (fin) 7 : mot de la salle serveur",
+      hints: "Cherchez près des racks et des étiquettes.",
     },
   },
   {
     room_number: 8,
     title: "Salle 8 - Révélation",
     mj: "Annoncez la révélation finale et guidez-les vers les symboles dans la salle.",
+    mini_game: {
+      rules: "Mini-jeu : recombinez les fragments révélés.",
+      attention: "Attention à la cohérence des fragments.",
+    },
     questions: [
       {
         prompt: "Question 1 : mot du reflet",
@@ -330,19 +335,19 @@ const roomGuides: RoomGuide[] = [
         hint: "Demandez-leur de suivre la trajectoire dessinée.",
       },
     ],
-    enigme: {
-      title: "Énigme 8 : mot de la révélation",
-      hints: "Rassemblez les quatre mots pour obtenir la révélation.",
-    },
-    mini_game: {
-      rules: "Mini-jeu : recombinez les fragments révélés.",
-      attention: "Attention à la cohérence des fragments.",
+    mini_game_end: {
+      title: "Mini-jeu (fin) 8 : mot de la révélation",
+      hints: "Reliez la chronologie des indices.",
     },
   },
   {
     room_number: 9,
     title: "Salle 9 - Archives",
     mj: "Expliquez que les archives contiennent des indices anciens à déchiffrer.",
+    mini_game: {
+      rules: "Mini-jeu : reconstituez le code de classement.",
+      attention: "Attention aux codes similaires.",
+    },
     questions: [
       {
         prompt: "Question 1 : mot dans les archives",
@@ -357,19 +362,19 @@ const roomGuides: RoomGuide[] = [
         hint: "Ecoutez le silence et lisez le panneau.",
       },
     ],
-    enigme: {
-      title: "Énigme 9 : mot du coffre des archives",
-      hints: "Combinez les mots trouvés dans les archives.",
-    },
-    mini_game: {
-      rules: "Mini-jeu : reconstituez le code de classement.",
-      attention: "Attention aux codes similaires.",
+    mini_game_end: {
+      title: "Mini-jeu (fin) 9 : mot du coffre des archives",
+      hints: "Indexez les dates et trouvez la combinaison.",
     },
   },
   {
     room_number: 10,
     title: "Salle 10 - Rooftop",
     mj: "Présentez le rooftop comme le point culminant où le vent souffle des indices.",
+    mini_game: {
+      rules: "Mini-jeu : trouvez la bonne combinaison de panneaux.",
+      attention: "Attention aux panneaux qui se ressemblent.",
+    },
     questions: [
       {
         prompt: "Question 1 : mot du panneau du rooftop",
@@ -388,51 +393,28 @@ const roomGuides: RoomGuide[] = [
         hint: "Inspectez la zone sous le toit.",
       },
     ],
-    enigme: {
-      title: "Énigme 10 : mot de l'aventure sur le toit",
-      hints: "Tous les signes du rooftop convergent vers ce mot.",
-    },
-    mini_game: {
-      rules: "Mini-jeu : trouvez la bonne combinaison de panneaux.",
-      attention: "Attention aux panneaux qui se ressemblent.",
+    mini_game_end: {
+      title: "Mini-jeu (fin) 10 : mot de l'aventure sur le toit",
+      hints: "Assemblez la carte et les indices météo.",
     },
   },
   {
     room_number: 11,
     title: "Salle 11 - Trésor",
     mj: "Décrivez la salle du trésor comme l'avant-dernière étape.",
+    mini_game: {
+      rules: "Aucun mini-jeu dans cette salle.",
+      attention: "Restez attentif à la phrase-clé.",
+    },
     questions: [
       {
         prompt: "Question 1 : mot du trésor",
         hint: "Concentrez-vous sur le coffre et les symboles.",
       },
     ],
-    enigme: {
-      title: "Pas d'énigme pour cette salle",
-      hints: "Cette salle est centrée sur la recherche du trésor.",
-    },
-    mini_game: {
-      rules: "Aucun mini-jeu dans cette salle.",
-      attention: "Restez attentif à la phrase-clé.",
-    },
-  },
-  {
-    room_number: 12,
-    title: "Salle 12 - Finale",
-    mj: "Préparez-les pour la conclusion et le mot final de l'aventure.",
-    questions: [
-      {
-        prompt: "Question finale : code de fin",
-        hint: "Utilisez tous les indices précédents pour trouver le mot.",
-      },
-    ],
-    enigme: {
-      title: "Pas d'énigme pour cette salle",
-      hints: "Cette salle est la conclusion finale.",
-    },
-    mini_game: {
-      rules: "Aucun mini-jeu dans cette salle.",
-      attention: "Restez concentré sur la réponse finale.",
+    mini_game_end: {
+      title: "Pas de mini-jeu (fin) pour cette salle",
+      hints: "Cette salle est purement décorative.",
     },
   },
 ];
@@ -489,6 +471,8 @@ const Admin = () => {
   // Team creation
   const [createTeamName, setCreateTeamName] = useState("");
   const [createMembers, setCreateMembers] = useState<Array<{ first_name: string; last_name: string }>>([
+    { first_name: "", last_name: "" },
+    { first_name: "", last_name: "" },
     { first_name: "", last_name: "" },
     { first_name: "", last_name: "" },
     { first_name: "", last_name: "" },
@@ -654,6 +638,8 @@ const Admin = () => {
         toast.success(`Équipe "${createTeamName}" créée`);
         setCreateTeamName("");
         setCreateMembers([
+          { first_name: "", last_name: "" },
+          { first_name: "", last_name: "" },
           { first_name: "", last_name: "" },
           { first_name: "", last_name: "" },
           { first_name: "", last_name: "" },
@@ -1019,7 +1005,10 @@ const Admin = () => {
                         }`}
                       >
                         <p className="font-semibold text-slate-200">{team.team_name}</p>
-                        <p className="text-xs text-slate-400">{team.points} pts</p>
+                        <div className="flex flex-wrap gap-2 mt-1 text-xs text-slate-400">
+                          <span>{team.points} pts</span>
+                          <span>Créée par {team.created_by_admin || 'Inconnu'}</span>
+                        </div>
                       </button>
                     ))}
                   </div>
@@ -1145,7 +1134,7 @@ const Admin = () => {
                   </div>
 
                   <div className="space-y-3">
-                    <p className="text-sm font-semibold text-slate-300">Membres (au moins 1)</p>
+                    <p className="text-sm font-semibold text-slate-300">Membres (1 à 5)</p>
                     {createMembers.map((member, idx) => (
                       <div key={idx} className="flex gap-2">
                         <Input
@@ -1332,7 +1321,7 @@ const Admin = () => {
                         <div>
                           <p className={`text-lg font-semibold ${roomTitleStyle}`}>{room.title}</p>
                           <p className="text-sm text-slate-400">
-                            Questions : {totalQuestions} / Enigme : {room.enigme.title.includes("Pas d") ? 0 : 1} / Mini-jeu : {room.mini_game.rules.includes("Aucun") ? 0 : 1}
+                            Questions : {totalQuestions} / Mini-jeu (fin) : {room.mini_game_end.title.includes("Pas de") ? 0 : 1} / Mini-jeu : {room.mini_game.rules.includes("Aucun") ? 0 : 1}
                           </p>
                           {correctCount > 0 && !isRoomComplete ? (
                             <p className="text-xs text-sky-200 mt-1">
@@ -1349,6 +1338,14 @@ const Admin = () => {
                         <div>
                           <p className="font-semibold text-slate-200">MJ</p>
                           <p>{room.mj}</p>
+                        </div>
+
+                        <div>
+                          <p className="font-semibold text-slate-200">Mini-jeu</p>
+                          <div className="rounded-md border border-slate-800 bg-slate-950 p-3 mt-2">
+                            <p className="font-medium text-slate-100">Règles : {room.mini_game.rules}</p>
+                            <p className="text-slate-400 text-xs mt-1">Attention : {room.mini_game.attention}</p>
+                          </div>
                         </div>
 
                         <div>
@@ -1383,18 +1380,10 @@ const Admin = () => {
                         </div>
 
                         <div>
-                          <p className="font-semibold text-slate-200">Énigme</p>
+                          <p className="font-semibold text-slate-200">Mini-jeu (fin)</p>
                           <div className="rounded-md border border-slate-800 bg-slate-950 p-3 mt-2">
-                            <p className="font-medium text-slate-100">{room.enigme.title}</p>
-                            <p className="text-slate-400 text-xs mt-1">Indices : {room.enigme.hints}</p>
-                          </div>
-                        </div>
-
-                        <div>
-                          <p className="font-semibold text-slate-200">Mini-jeu</p>
-                          <div className="rounded-md border border-slate-800 bg-slate-950 p-3 mt-2">
-                            <p className="font-medium text-slate-100">Règles : {room.mini_game.rules}</p>
-                            <p className="text-slate-400 text-xs mt-1">Attention : {room.mini_game.attention}</p>
+                            <p className="font-medium text-slate-100">{room.mini_game_end.title}</p>
+                            <p className="text-slate-400 text-xs mt-1">Indices : {room.mini_game_end.hints}</p>
                           </div>
                         </div>
                       </div>
