@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { ArrowLeft, LogOut, Medal, Pencil, RefreshCw, Trash2, Trophy, Users } from "lucide-react";
+import { ArrowLeft, LogOut, Medal, Pencil, RefreshCw, Trash2, Trophy, Users, BookOpen } from "lucide-react";
 import EditTeamDialog from "@/components/EditTeamDialog";
+import MJGuide from "@/components/MJGuide";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   AlertDialog,
@@ -163,6 +165,12 @@ const Admin = () => {
           </p>
         </header>
 
+        <Tabs defaultValue="teams" className="mb-6">
+          <TabsList>
+            <TabsTrigger value="teams"><Users className="h-4 w-4 mr-2" />Équipes</TabsTrigger>
+            <TabsTrigger value="mj"><BookOpen className="h-4 w-4 mr-2" />Guide MJ</TabsTrigger>
+          </TabsList>
+          <TabsContent value="teams" className="space-y-10 mt-6">
         {finishedTeams.length > 0 && (
           <section className="mb-10">
             <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
@@ -347,7 +355,13 @@ const Admin = () => {
             </div>
           )}
         </section>
+          </TabsContent>
+          <TabsContent value="mj" className="mt-6">
+            <MJGuide />
+          </TabsContent>
+        </Tabs>
       </div>
+
 
       <EditTeamDialog
         open={!!editingTeam}
