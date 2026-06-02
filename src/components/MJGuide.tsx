@@ -43,7 +43,7 @@ export default function MJGuide() {
     const pwd = adminAuth.getPassword();
     if (!pwd) return;
     setLoading(true);
-    const { data, error } = await supabase.rpc("admin_get_mj_guide", { p_password: pwd });
+    const { data, error } = await (supabase.rpc as any)("admin_get_mj_guide", { p_password: pwd });
     setLoading(false);
     if (error) {
       toast.error("Impossible de charger le guide MJ");
