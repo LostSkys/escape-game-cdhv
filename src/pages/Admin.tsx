@@ -157,7 +157,7 @@ const roomGuides: RoomGuide[] = [
         answer: "grand tétras",
       },
       {
-        prompt: "Question 2 : Citez la plante utiliser dans nos bonbons les plus vendus",
+        prompt: "Question 2 : Citez la plante utilisée dans nos bonbons les plus vendus",
         hint: "Son goût provient d'un grand connifère !",
         answer: "pin",
       },
