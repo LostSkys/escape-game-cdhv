@@ -1404,6 +1404,7 @@ const Admin = () => {
                           <div className="rounded-md border border-slate-800 bg-slate-950 p-3 mt-2">
                             <p className="font-medium text-slate-100">Règles : {room.mini_game.rules}</p>
                             <p className="text-slate-400 text-xs mt-1">Attention : {room.mini_game.attention}</p>
+                            <p className="text-slate-400 text-xs mt-1">Réponse : {room.mini_game.answer}</p>
                           </div>
                         </div>
 
@@ -1432,6 +1433,7 @@ const Admin = () => {
                                     </span>
                                   </div>
                                   <p className="text-slate-400 text-xs mt-1">Indice : {question.hint}</p>
+                                  <p className="text-slate-400 text-xs mt-1">Réponse : {question.answer}</p>
                                 </div>
                               );
                             })}
@@ -1443,6 +1445,7 @@ const Admin = () => {
                           <div className="rounded-md border border-slate-800 bg-slate-950 p-3 mt-2">
                             <p className="font-medium text-slate-100">{room.mini_game_end.title}</p>
                             <p className="text-slate-400 text-xs mt-1">Indices : {room.mini_game_end.hints}</p>
+                            <p className="text-slate-400 text-xs mt-1">Réponse : {room.mini_game_end.answer}</p>
                           </div>
                         </div>
                       </div>

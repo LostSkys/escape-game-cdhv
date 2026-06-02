@@ -1,330 +1,173 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { teamStorage } from "@/lib/teamStorage";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ArrowLeft, LogOut, Trophy, History, Play, Sparkles } from "lucide-react";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { LogOut, Trophy, History, Play, Sparkles, RefreshCw } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RoomView from "@/components/RoomView";
 import HintsTab from "@/components/HintsTab";
-
-interface TeamData {
-  team_id: string;
-  team_name: string;
-  points: number;
-  members: string;
-}
-
-interface AttemptHistory {
-  room_number: number;
-  room_title: string;
-  answer_submitted: string;
-  is_correct: boolean;
-  points_change: number;
-  admin_name: string;
-  created_at: string;
-}
-
-interface LeaderboardEntry {
-  rank: number;
-  team_name: string;
-  points: number;
-  members: string;
-}
+import { Input } from "@/components/ui/input";
 
 const Jeu = () => {
   const navigate = useNavigate();
-  
-  // Get team from localStorage (assuming you have teamStorage or similar)
-  const teamData = localStorage.getItem("team_data");
-  const team = teamData ? JSON.parse(teamData) : null;
+  const team = teamStorage.get();
   
   const [loading, setLoading] = useState(true);
-  const [teamInfo, setTeamInfo] = useState<TeamData | null>(null);
+  const [teamData, setTeamData] = useState<any>(null);
+  const [history, setHistory] = useState<any[]>([]);
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [roomCode, setRoomCode] = useState("");
-  const [activeRoomCode, setActiveRoomCode] = useState<string | null>(null);
-  const [attempts, setAttempts] = useState<AttemptHistory[]>([]);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [isInRoom, setIsInRoom] = useState(false);
 
   useEffect(() => {
-    if (!team) {
-      navigate("/inscription");
+    // Si pas de session, on dégage pour éviter la boucle
+    if (!team || !team.team_id) {
+      navigate("/inscription", { replace: true });
       return;
     }
     loadData();
-  }, [team, navigate]);
+  }, []);
 
   const loadData = async () => {
-    if (!team) return;
+    if (!team?.team_id) return;
     setLoading(true);
-
     try {
-      // Load team progress
-      const { data: progressData } = await (supabase.rpc("get_team_progress", {
-        p_team_id: team.team_id,
-      }) as any);
+      // 1. Infos équipe
+      const { data: tData } = await supabase
+        .from("teams")
+        .select("*")
+        .eq("id", team.team_id)
+        .single();
+      
+      if (tData) setTeamData(tData);
 
-      if (progressData && Array.isArray(progressData) && progressData.length > 0) {
-        setTeamInfo({
-          team_id: progressData[0].team_id,
-          team_name: progressData[0].team_name,
-          points: progressData[0].points,
-          members: progressData[0].members,
-        });
-      }
+      // 2. Historique
+      const { data: hData } = await supabase
+        .from("attempt_log")
+        .select("*, rooms(room_number, title), admins(name)")
+        .eq("team_id", team.team_id)
+        .order("created_at", { ascending: false });
+      
+      if (hData) setHistory(hData);
 
-      // Nothing extra required here for the public game view.
+      // 3. Leaderboard
+      const { data: lData } = await supabase
+        .from("teams")
+        .select("id, name, points")
+        .order("points", { ascending: false });
+      
+      if (lData) setLeaderboard(lData);
 
-      // Load attempt history for this team
-      const { data: attemptsData } = await (supabase.rpc("get_attempt_history", {
-        p_team_id: team.team_id,
-        p_limit: 100,
-      }) as any);
-
-      if (attemptsData) {
-        setAttempts(attemptsData as AttemptHistory[]);
-      }
-
-      // Load leaderboard
-      const { data: leaderboardData } = await (supabase.rpc("get_leaderboard") as any);
-
-      if (leaderboardData) {
-        setLeaderboard(leaderboardData as LeaderboardEntry[]);
-      }
     } catch (err) {
-      console.error("Error loading data:", err);
-      toast.error("Erreur lors du chargement des données");
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("team_data");
-    navigate("/inscription");
+    teamStorage.clear();
+    navigate("/inscription", { replace: true });
   };
 
-  if (loading) {
-    return (
-      <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 to-slate-900">
-        <p className="text-slate-400">Chargement...</p>
-      </main>
-    );
-  }
-
-  if (!teamInfo) {
-    return (
-      <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 to-slate-900">
-        <div className="text-center">
-          <p className="text-slate-400 mb-4">Équipe non trouvée</p>
-          <Button onClick={() => navigate("/inscription")}>Retour</Button>
-        </div>
-      </main>
-    );
-  }
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">Chargement...</div>;
 
   return (
-    <main className="min-h-screen px-4 py-6 bg-gradient-to-br from-slate-950 to-slate-900">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <Link
-              to="/"
-              className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200 transition-colors mb-4"
-            >
-              <ArrowLeft className="h-4 w-4" /> Accueil
-            </Link>
-            <h1 className="text-3xl font-bold">{teamInfo.team_name}</h1>
-            <p className="text-sm text-slate-400 mt-2">{teamInfo.members}</p>
+    <main className="min-h-screen bg-slate-950 text-slate-200 pb-12">
+      <nav className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-6 w-6 text-blue-400" />
+            <span className="font-display font-bold text-xl tracking-tight">ESCAPE GAME</span>
           </div>
-
-          <div className="flex flex-col items-end gap-3">
-            <div className="text-right">
-              <p className="text-sm text-slate-400">Points</p>
-              <p className="text-3xl font-bold text-blue-400">{teamInfo.points}</p>
-            </div>
-            <Button variant="destructive" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-1" /> Quitter
-            </Button>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <Tabs defaultValue="game" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-slate-900 border border-slate-800">
-            <TabsTrigger value="game" className="flex items-center gap-2">
-              <Play className="h-4 w-4" />
-              <span className="hidden sm:inline">Jeu</span>
-            </TabsTrigger>
-            <TabsTrigger value="leaderboard" className="flex items-center gap-2">
-              <Trophy className="h-4 w-4" />
-              <span className="hidden sm:inline">Classement</span>
-            </TabsTrigger>
-            <TabsTrigger value="history" className="flex items-center gap-2">
-              <History className="h-4 w-4" />
-              <span className="hidden sm:inline">Historique</span>
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Game Tab */}
-          <TabsContent value="game" className="space-y-6">
-            <Card className="border-slate-800 bg-slate-950">
-              <CardHeader>
-                <CardTitle>Votre aventure</CardTitle>
-                <CardDescription>Entrez le code de votre salle pour continuer l&apos;escape game.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
-                  <div className="space-y-4">
-                    <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
-                      <div className="flex items-center justify-between gap-6">
-                        <div>
-                          <p className="text-sm text-slate-400">Équipe</p>
-                          <h2 className="text-2xl font-bold text-slate-100">{teamInfo.team_name}</h2>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm text-slate-400">Points</p>
-                          <p className="text-3xl font-bold text-sky-400">{teamInfo.points}</p>
-                        </div>
-                      </div>
-                      <div className="mt-4 rounded-2xl bg-slate-950 p-4 border border-slate-800">
-                        <p className="text-sm text-slate-400">Membres</p>
-                        <p className="text-sm text-slate-200 mt-2">{teamInfo.members}</p>
-                      </div>
-                    </div>
-
-                    {activeRoomCode ? (
-                      <RoomView
-                        roomCode={activeRoomCode}
-                        teamId={teamInfo.team_id}
-                        onCompleted={() => {
-                          setActiveRoomCode(null);
-                          loadData();
-                        }}
-                        onCancel={() => setActiveRoomCode(null)}
-                      />
-                    ) : (
-                      <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
-                        <div className="space-y-4">
-                          <div>
-                            <Label htmlFor="room-code" className="text-sm text-slate-400">
-                              Code de salle
-                            </Label>
-                            <Input
-                              id="room-code"
-                              value={roomCode}
-                              onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                              placeholder="Ex: SALLE01"
-                              className="mt-3 bg-slate-950 border-slate-800"
-                            />
-                          </div>
-
-                          <Button
-                            className="w-full bg-slate-700 hover:bg-slate-600"
-                            onClick={() => setActiveRoomCode(roomCode.trim().toUpperCase())}
-                            disabled={!roomCode.trim()}
-                          >
-                            Entrer dans la salle
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
-                    <div className="flex items-center gap-3 text-slate-100 mb-4">
-                      <Sparkles className="h-4 w-4 text-amber-400" />
-                      <p className="text-sm font-semibold">Indices et histoire</p>
-                    </div>
-                    <HintsTab teamId={teamInfo.team_id} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Leaderboard Tab */}
-          <TabsContent value="history" className="space-y-6">
-            <Card className="border-slate-800 bg-slate-950">
-              <CardHeader>
-                <CardTitle>Historique des Tentatives</CardTitle>
-                <CardDescription>{attempts.length} tentatives enregistrées</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {attempts.length === 0 ? (
-                  <p className="text-slate-400 text-center py-8">Aucune tentative pour le moment</p>
-                ) : (
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {attempts.map((attempt, idx) => (
-                      <div
-                        key={idx}
-                        className={`p-4 rounded-lg border ${
-                          attempt.is_correct
-                            ? "bg-green-950 border-green-700"
-                            : "bg-red-950 border-red-700"
-                        }`}
-                      >
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <p className="font-semibold text-slate-200">
-                              Salle {attempt.room_number}: {attempt.room_title}
-                            </p>
-                            <p className="text-sm text-slate-400 mt-1">
-                              Réponse: <span className="font-mono">{attempt.answer_submitted}</span>
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className={`text-lg ${
-                              attempt.is_correct
-                                ? "text-green-400"
-                                : "text-red-400"
-                            }`}>
-                              {attempt.is_correct ? "✅" : "❌"}
-                            </p>
-                            <p className={`text-sm font-semibold ${
-                              attempt.points_change > 0
-                                ? "text-green-400"
-                                : "text-red-400"
-                            }`}>
-                              {attempt.points_change > 0 ? "+" : ""}{attempt.points_change}
-                            </p>
-                          </div>
-                        </div>
-                        <p className="text-xs text-slate-500">
-                          par {attempt.admin_name} • {new Date(attempt.created_at).toLocaleTimeString()}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-
-        {/* Refresh button */}
-        <div className="mt-8 text-center">
-          <Button
-            variant="outline"
-            onClick={loadData}
-            className="text-slate-400 border-slate-700 hover:bg-slate-900"
-          >
-            Actualiser les données
+          <Button variant="ghost" size="sm" onClick={handleLogout} className="text-slate-400 hover:text-white">
+            <LogOut className="h-4 w-4 mr-2" /> Quitter
           </Button>
         </div>
+      </nav>
+
+      <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+        <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <p className="text-blue-400 font-medium mb-1 uppercase tracking-widest text-xs">Session active</p>
+            <h1 className="text-4xl font-extrabold text-white">{teamData?.name}</h1>
+          </div>
+          <div className="bg-blue-600 px-6 py-3 rounded-2xl shadow-lg shadow-blue-900/20 flex flex-col items-center">
+            <span className="text-blue-100 text-xs uppercase font-bold">Points</span>
+            <span className="text-3xl font-black text-white">{teamData?.points || 0}</span>
+          </div>
+        </header>
+
+        <Tabs defaultValue="game" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 bg-slate-900 border border-slate-800 p-1 h-12">
+            <TabsTrigger value="game"><Play className="h-4 w-4 mr-2" /> Explorer</TabsTrigger>
+            <TabsTrigger value="leaderboard"><Trophy className="h-4 w-4 mr-2" /> Classement</TabsTrigger>
+            <TabsTrigger value="history"><History className="h-4 w-4 mr-2" /> Historique</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="game" className="mt-6">
+            {!isInRoom ? (
+              <Card className="bg-slate-900 border-slate-800">
+                <CardHeader>
+                  <CardTitle>Entrer dans une salle</CardTitle>
+                  <CardDescription>Saisissez le code trouvé pour débloquer les énigmes.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Input 
+                    placeholder="Code de la salle..." 
+                    value={roomCode} 
+                    onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                    className="h-14 text-2xl text-center font-mono bg-slate-950 border-slate-700"
+                  />
+                  <Button className="w-full h-12 text-lg" onClick={() => setIsInRoom(true)} disabled={!roomCode}>
+                    Débloquer la salle
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <RoomView 
+                roomCode={roomCode} 
+                teamId={team.team_id} 
+                onCompleted={() => { setIsInRoom(false); setRoomCode(""); loadData(); }} 
+                onCancel={() => setIsInRoom(false)} 
+              />
+            )}
+          </TabsContent>
+
+          <TabsContent value="leaderboard" className="mt-6">
+             <Card className="bg-slate-900 border-slate-800">
+                <CardHeader><CardTitle>Top Équipes</CardTitle></CardHeader>
+                <CardContent className="space-y-2">
+                  {leaderboard.map((t, i) => (
+                    <div key={t.id} className={`flex items-center justify-between p-4 rounded-lg ${t.id === team.team_id ? 'bg-blue-600/20 border border-blue-500/50' : 'bg-slate-950'}`}>
+                      <span className="font-bold text-slate-400">#{i+1} {t.name}</span>
+                      <span className="font-bold text-blue-400">{t.points} pts</span>
+                    </div>
+                  ))}
+                </CardContent>
+             </Card>
+          </TabsContent>
+
+          <TabsContent value="history" className="mt-6">
+             <Card className="bg-slate-900 border-slate-800">
+                <CardHeader><CardTitle>Dernières actions</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  {history.map((h, i) => (
+                    <div key={i} className="border-l-2 border-slate-700 pl-4 py-1">
+                      <p className="text-sm font-bold">{h.rooms?.title} : {h.is_correct ? '✅ Réussi' : '❌ Échec'}</p>
+                      <p className="text-xs text-slate-500">{new Date(h.created_at).toLocaleTimeString()}</p>
+                    </div>
+                  ))}
+                </CardContent>
+             </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </main>
   );
 };
 
 export default Jeu;
-      
