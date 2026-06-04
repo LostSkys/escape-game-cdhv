@@ -993,7 +993,7 @@ SELECT id, 1, 1, ARRAY['1986'], 'En quelle année a été créée la confiserie 
 
 -- Room 2: QUESTION (4 questions + mini-jeu + énigme)
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 1, 2, ARRAY['ORDRE', 'BON ORDRE', 'COMBINAISON', 'LA BONNE COMBINAISON'], 'Mini-jeu : décidez le bon ordre des objets.', 'MINI-2', 'ORDRE', 'Une combinaison doit être trouvée.', false, NULL FROM public.rooms WHERE room_number = 2;
+SELECT id, 1, 2, ARRAY['tanet', 'TANET'], 'Mini-jeu : Le pistage du Lynx : Identifiez les traces au sol. Chaque trace mène à une lettre. L''ensemble forme le nom d''un sommet vosgien.', 'MINI-2', 'ORDRE', 'Une combinaison doit être trouvée.', false, NULL FROM public.rooms WHERE room_number = 2;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
 SELECT id, 2, 2, ARRAY['Le grand tétras', 'tétras', 'TÉTRAS', 'TETRAS', 'GRAND TETRAS', 'GRAND TÉTRAS'], 'Quel animal emblématique des Vosges est représenté sur la table devant vous ? ', 'Q2-1', 'Q2-1', 'on en croise dans les forêts de conifères', false, NULL FROM public.rooms WHERE room_number = 2;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
@@ -1001,47 +1001,47 @@ SELECT id, 3, 2, ARRAY['Sapin', 'SAPIN'], 'Citez la plante utiliser dans nos bon
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
 SELECT id, 4, 2, ARRAY['700', '700m', '700M'], 'À quelle altitude moyenne se situe la confiserie ?', 'Q2-3', 'Q2-3', 'Regardez la carte des Vosges et trouvez notre emplacement.', false, NULL FROM public.rooms WHERE room_number = 2;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 5, 2, ARRAY['CLÉ'], 'Quel est le plus haut sommet de la chaîne des Vosges ?', 'Q2-4', 'Q2-4', 'Faites-les regarder la carte.', false, NULL FROM public.rooms WHERE room_number = 2;
+SELECT id, 5, 2, ARRAY['Le grand ballon', 'grand ballon', 'GRAND BALLON', 'le grand ballon', 'LE GRAND BALLON'], 'Quel est le plus haut sommet de la chaîne des Vosges ?', 'Q2-4', 'Q2-4', 'Faites-les regarder la carte.', false, NULL FROM public.rooms WHERE room_number = 2;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 6, 2, ARRAY['BUREAU'], 'Mini-jeu (fin) : quel mot termine la phrase ?', 'MINI-2-end', NULL, 'Reliez les indices précédents.', false, NULL FROM public.rooms WHERE room_number = 2;
+SELECT id, 6, 2, ARRAY['SUCRE', 'sucre'], 'Mini-jeu (fin) : utilisez la boussole pour pointer vers le Nord et trouver un indice visuel sur le mur.', 'MINI-2-end', NULL, 'cherchez le composant de base des bonbons.', false, NULL FROM public.rooms WHERE room_number = 2;
 
 -- Room 3: QUESTION (4 questions + mini-jeu + énigme)
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 1, 3, ARRAY['ORDRE', 'ORDRE DU JOUR', 'ORDREDUJOUR'], 'Mini-jeu (début) : Quel mot clé de réunion apparaît dans l''agenda ?', 'MINI-3-start', 'ORDRE', 'Vérifiez l''ordre des sujets.', false, NULL FROM public.rooms WHERE room_number = 3;
+SELECT id, 1, 3, ARRAY['SAVEURS', 'saveurs', 'SAVEUR', 'saveur'], 'Mini-jeu (début) : Dégustation de 6 brisures à l''aveugle. L''équipe doit voter pour identifier les saveurs.', 'MINI-3-start', 'ORDRE', 'JSP', false, NULL FROM public.rooms WHERE room_number = 3;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 2, 3, ARRAY['TABLE'], 'Quel objet est mentionné dans le procès-verbal ?', 'Q3-2', 'Q3-2', 'Cherchez le mobilier décrit.', false, NULL FROM public.rooms WHERE room_number = 3;
+SELECT id, 2, 3, ARRAY['ANIS', 'anis'], 'demandez d''identifier la saveur mystère n°3. (Options : Anis, Sapin ou Coquelicot)', 'Q3-2', 'Q3-2', 'On m''asscocie souvvent à une étoile en cuisine.', false, NULL FROM public.rooms WHERE room_number = 3;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 3, 3, ARRAY['PRISE'], 'Quel mot apparaît près de la prise ?', 'Q3-3', 'Q3-3', 'Observez les symboles électriques.', false, NULL FROM public.rooms WHERE room_number = 3;
+SELECT id, 3, 3, ARRAY['OUIE', 'ouïe', 'ouie'], 'Quel sens est le plus sollicité lors de la cuisson du sucre ?', 'Q3-3', 'Q3-3', 'Une histoire de cordes sensibles et de bouillonnements.', false, NULL FROM public.rooms WHERE room_number = 3;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 4, 3, ARRAY['CIRCUIT'], 'Quel terme technique est inscrit sur la feuille ?', 'Q3-4', 'Q3-4', 'Suivez le fil conducteur.', false, NULL FROM public.rooms WHERE room_number = 3;
+SELECT id, 4, 3, ARRAY['BETTERAVE', 'betterave'], 'Quel ingrédient naturel donne la couleur rouge à nos bonbons ?', 'Q3-4', 'Q3-4', 'Quand on la prépare ça peut tacher nos vêtements en rouge !', false, NULL FROM public.rooms WHERE room_number = 3;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 5, 3, ARRAY['FRAGMENTS', 'DOCUMENTS', 'ORDRE'], 'Mini-jeu : alignez les documents dans le bon ordre.', 'MINI-3', NULL, 'L''ordre est la clé.', false, NULL FROM public.rooms WHERE room_number = 3;
+SELECT id, 5, 3, ARRAY['FRAGMENTS', 'DOCUMENTS', 'ORDRE'], 'Trouvez ce qui cloche dans ce paquet de bonbons.', 'MINI-3', 'MINI-3', 'Cherchez le bonbons différent !', false, NULL FROM public.rooms WHERE room_number = 3;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 6, 3, ARRAY['REUNION', 'RÉUNION', 'REUNION'], 'Mini-jeu (fin) : quel mot coiffe la réunion ?', 'MINI-3-end', NULL, 'Reliez tous les éléments vus.', false, NULL FROM public.rooms WHERE room_number = 3;
+SELECT id, 6, 3, ARRAY['ODEURS', 'odeurs', 'ODEUR', 'odeur'], 'Mini-jeu (fin) : Un test de reconnaissance d''odeurs via des flacons numérotés.', 'MINI-3-end', 'OUI', 'JSP', false, NULL FROM public.rooms WHERE room_number = 3;
 
 -- Room 4: QUESTION (question + mini-jeu + énigme)
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 1, 4, ARRAY['RITUEL', 'ORDRE', 'CEREMONIE'], 'Mini-jeu : ordonnez les éléments du rituel.', 'MINI-4', 'RITUEL', 'L''ordre est important.', false, NULL FROM public.rooms WHERE room_number = 4;
+SELECT id, 1, 4, ARRAY['sucrant', 'SUCRANT', 'Sucrant'], 'Mini-jeu :  Classez 5 échantillons de sucres du moins sucrant au plus sucrant (Fructose, Glucose, Saccharose, lactose et Maltose ).', 'MINI-4', 'RITUEL', 'le bon ordre est : (Fructose, Glucose, Saccharose, lactose et Maltose ), donner les deux premiers si nécessaire.', false, NULL FROM public.rooms WHERE room_number = 4;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 2, 4, ARRAY['MYSTERE'], 'Quel mot décrit le début de la cérémonie ?', 'Q4-1', 'Q4-1', 'Cherchez le respect de la tradition.', false, NULL FROM public.rooms WHERE room_number = 4;
+SELECT id, 2, 4, ARRAY['BRIQUE', 'brique'], 'Si je vous dis que le Saccharose est un mur de brique, qu''est-ce que le glucose ?', 'Q4-1', 'Q4-1', 'Si le mur est l''assemblage final, je suis l''élément de base que tu tiens dans la main.', false, NULL FROM public.rooms WHERE room_number = 4;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 3, 4, ARRAY['OFFRE'], 'Quel mot apparaît sur l''offrande ?', 'Q4-2', 'Q4-2', 'Regardez près de l''autel.', false, NULL FROM public.rooms WHERE room_number = 4;
+SELECT id, 3, 4, ARRAY['84'], ' À quel pourcentage d''humidité le sucre commence-t-il à cristalliser ?', 'Q4-2', 'Q4-2', 'je suis entre 80 et 85', false, NULL FROM public.rooms WHERE room_number = 4;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 4, 4, ARRAY['CHANT'], 'Quel mot est inscrit sur la banderole ?', 'Q4-3', 'Q4-3', 'Les paroles du chant contiennent la clé.', false, NULL FROM public.rooms WHERE room_number = 4;
+SELECT id, 4, 4, ARRAY['CITRIQUE', 'citrique', 'Citrique'], 'Quel acide naturel est utilisé pour fixer les arômes ?', 'Q4-3', 'Q4-3', 'C''est un mélange entre le mot citron et électrique', false, NULL FROM public.rooms WHERE room_number = 4;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 5, 4, ARRAY['CEREMONIE', 'CÉRÉMONIE'], 'Mini-jeu (fin) : quel mot verrouille la cérémonie ?', 'MINI-4-end', NULL, 'Assemblez les indices précédents.', false, NULL FROM public.rooms WHERE room_number = 4;
+SELECT id, 5, 4, ARRAY['CEREMONIE', 'CÉRÉMONIE'], 'Mini-jeu (fin) : Peser exactement 152 g de sucre sur une balance de précision sans voir l''écran.', 'MINI-4-end', 'YES', 'Aucun', false, NULL FROM public.rooms WHERE room_number = 4;
 
 -- Room 5: QUESTION (3 questions + mini-jeu + énigme)
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 1, 5, ARRAY['FORMULES', 'SYMBOLS', 'ASSOCIATION'], 'Mini-jeu : associez les formules et les symboles.', 'MINI-5', 'FORMULES', 'Chaque formule a son symbole.', false, NULL FROM public.rooms WHERE room_number = 5;
+SELECT id, 1, 5, ARRAY['Plantes', 'PLANTES', 'PLANTE', 'plantes', 'plante', 'Plante'], 'Mini-jeu :  Résoudre l''énigme de l''herbier Perdu en associant les plantes réelles (anis, menthe, coquelicot, violette, eucalyptus) aux bonbons correspondants.', 'MINI-5', 'FORMULES', 'Donner des indices sur les plantes si necessaire.', false, NULL FROM public.rooms WHERE room_number = 5;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 2, 5, ARRAY['LABO'], 'Quel mot caché apparaît sur le tableau blanc ?', 'Q5-1', 'Q5-1', 'Regardez les notes laissées.', false, NULL FROM public.rooms WHERE room_number = 5;
+SELECT id, 2, 5, ARRAY['Racine', 'racine', 'Racines', 'RACINE', 'racines', 'RACINES'], 'La Gentiane : est-ce une fleur, une racine ou une feuille ?', 'Q5-1', 'Q5-1', 'Pensez au gingembre.', false, NULL FROM public.rooms WHERE room_number = 5;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 3, 5, ARRAY['ACIDE'], 'Quel composé est mentionné dans les notes ?', 'Q5-2', 'Q5-2', 'Les flacons ont la réponse.', false, NULL FROM public.rooms WHERE room_number = 5;
+SELECT id, 3, 5, ARRAY['EUCALYPTUS', 'eucalyptus', 'Eucalyptus'], 'Quelle plante exotique a des vertus apaisantes pour la gorge ?', 'Q5-2', 'Q5-2', 'c''est le repas préféré du koala.', false, NULL FROM public.rooms WHERE room_number = 5;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 4, 5, ARRAY['LUMIERE'], 'Quel mot est dans le carnet du chercheur ?', 'Q5-3', 'Q5-3', 'Cherchez l''indice écrit à la lumière.', false, NULL FROM public.rooms WHERE room_number = 5;
+SELECT id, 4, 5, ARRAY['MIEL DE SAPIN', 'Miel de sapin'], 'Quel bonbon a des effets apaisants sur la toux ?', 'Q5-3', 'Q5-3', 'C''est l''alliance parfaite entre le travail des abeilles et l''arbre roi de notre forêt vosgienne.', false, NULL FROM public.rooms WHERE room_number = 5;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 5, 5, ARRAY['LABORATOIRE'], 'Mini-jeu (fin) : quel mot verrouille la salle ?', 'MINI-5-end', NULL, 'Assemblez les indices précédents.', false, NULL FROM public.rooms WHERE room_number = 5;
+SELECT id, 5, 5, ARRAY['BOUGAINVILLIER'], 'Mini-jeu (fin) : Trouver la fleur qui n''appartient pas à la flore vosgienne parmi une liste. (L''arnica des montagnes,La digitale pourpre,La pensée des Vosges,Le bougainvillier,Le droséra à feuilles rondes,La gentiane jaune,L''anémone des sylves,la violette)', 'MINI-5-end', NULL, 'racourcicez la liste à 4 plantes.', false, NULL FROM public.rooms WHERE room_number = 5;
 
 -- Room 6: QUESTION (3 questions + mini-jeu + énigme)
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
@@ -1057,26 +1057,27 @@ SELECT id, 5, 6, ARRAY['COUVERTURE'], 'Mini-jeu (fin) : quel mot s''associe à l
 
 -- Room 7: QUESTION (4 questions + mini-jeu + énigme)
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 1, 7, ARRAY['CABLES', 'RESEAU', 'RESEAUX', 'CONNEXION'], 'Mini-jeu : réparez le réseau en reconnectant les bons câbles.', 'MINI-7', 'CABLES', 'Chaque câble compte.', false, NULL FROM public.rooms WHERE room_number = 7;
+SELECT id, 1, 7, ARRAY['CONFISEUR', 'Confiseur', 'confiseur'], 'Mini-jeu : L''équipe doit synchroniser ses mouvements pour mimer un confiseur. Chaque membre incarne une étape du processus de fabrication (mélange, cuisson, moulage, emballage).', 'MINI-7', 'CABLES', 'Attention, une erreur change tout.', false, NULL FROM public.rooms WHERE room_number = 7;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 2, 7, ARRAY['SERVEUR'], 'Quel mot apparaît sur le serveur principal ?', 'Q7-1', 'Q7-1', 'Regardez les voyants lumineux.', false, NULL FROM public.rooms WHERE room_number = 7;
+SELECT id, 2, 7, ARRAY['150'], ' À quelle température (°C) le sucre entre-t-il en ébullition ?', 'Q7-1', 'Q7-1', 'C''est bien plus chaud que l''eau qui bout dans une casserole, ajoutez-y la moitié d''une ébullition supplémentaire !', false, NULL FROM public.rooms WHERE room_number = 7;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
 SELECT id, 3, 7, ARRAY['CABLE'], 'Quel mot est gravé sur le câble rouge ?', 'Q7-2', 'Q7-2', 'Suivez le câble jusqu''au boîtier.', false, NULL FROM public.rooms WHERE room_number = 7;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 4, 7, ARRAY['RÉSEAU'], 'Quel mot se trouve dans le manuel réseau ?', 'Q7-3', 'Q7-3', 'Le manuel explique la connexion.', false, NULL FROM public.rooms WHERE room_number = 7;
+SELECT id, 4, 7, ARRAY['CUIVRE', 'cuivre', 'Cuivre'], 'Quel matériau est privilégié pour les chaudrons ?', 'Q7-3', 'Q7-3', 'Ce métal a la couleur d''une pièce de 1, 2 ou 5 centimes d''euro.', false, NULL FROM public.rooms WHERE room_number = 7;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 5, 7, ARRAY['PORT'], 'Quel mot figure près du port Ethernet ?', 'Q7-4', 'Q7-4', 'Vérifiez tous les ports actifs.', false, NULL FROM public.rooms WHERE room_number = 7;
+SELECT id, 5, 7, ARRAY['CUILLÈRE', 'cuillère', 'Cuillère'], 'Me dire quel outils est manquant sur l''établi de travail', 'Q7-4', 'Q7-4', 'Observez les outils et identifiez celui qui est absent.', false, NULL FROM public.rooms WHERE room_number = 7;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 6, 7, ARRAY['SERVEUR'], 'Mini-jeu (fin) : quel mot ouvre la salle serveur ?', 'MINI-7-end', NULL, 'Rassemblez tous les indices.', false, NULL FROM public.rooms WHERE room_number = 7;
+SELECT id, 6, 7, ARRAY['COOPÉRATION', 'Coopération', 'coopération', 'COOPERATION'], 'Mini-jeu (fin) : Le Guidage Aveugle : Un équipier a les yeux bandés. Les autres lui dictent les gestes précis pour mimer l''étirage du ruban de sucre.', 'MINI-7-end', 'TRUC', 'La communication est la clé, chaque mot compte.', false, NULL FROM public.rooms WHERE room_number = 7;
 
+-- Room 8: QUESTION (4 questions + mini-jeu + énigme)
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 1, 8, ARRAY['FRAGMENTS', 'REVELATION', 'COMBINAISON'], 'Mini-jeu : recombinez les fragments révélés.', 'MINI-8', 'FRAGMENTS', 'Chaque fragment compte.', false, NULL FROM public.rooms WHERE room_number = 8;
+SELECT id, 1, 8, ARRAY['Gestes Historique', 'Gestes historiques', 'GESTES HISTORIQUES', 'gestes historiques'], 'Mini-jeu : Faire traverser un parcours d'obstacles à l'équipier aveugle pour l''amener à mimer précisément les gestes historiques de fabrication (satinage et étirage).', 'MINI-8', 'FRAGMENTS', 'Attention à la coordination et à la précision des gestes, chaque étape doit être respectée pour réussir.', false, NULL FROM public.rooms WHERE room_number = 8;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 2, 8, ARRAY['REFLET'], 'Quel mot apparaît sur le miroir de la salle ?', 'Q8-1', 'Q8-1', 'Observez les reflets.', false, NULL FROM public.rooms WHERE room_number = 8;
+SELECT id, 2, 8, ARRAY['étirage/satinage', 'étirage', 'satinage', 'ETIRAGE', 'SATINAGE'], 'Quel est le geste technique pour incorporer de l''air dans la pâte à sucre ?', 'Q8-1', 'Q8-1', 'On le fait tous après une bonne sieste!', false, NULL FROM public.rooms WHERE room_number = 8;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 3, 8, ARRAY['CLEF'], 'Quel mot est gravé sur la petite clé ?', 'Q8-2', 'Q8-2', 'La clé ouvre une caisse.', false, NULL FROM public.rooms WHERE room_number = 8;
+SELECT id, 3, 8, ARRAY['AUCUN', 'aucun', 'Aucun'], 'Combien de temps de repos faut-il à la pâte avant le découpage ?', 'Q8-2', 'Q8-2', 'Si vous vous asseyez pour boire un café, c''est foutu. C''est une course contre la montre !', false, NULL FROM public.rooms WHERE room_number = 8;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 4, 8, ARRAY['OMBRE'], 'Quel mot se forme avec les ombres projetées ?', 'Q8-3', 'Q8-3', 'Alignez les projecteurs.', false, NULL FROM public.rooms WHERE room_number = 8;
+SELECT id, 4, 8, ARRAY['Modelage', 'MODELAGE', 'modelage'], 'Quelle est la fonction principale du cylindre dans la forme du bonbon ?', 'Q8-3', 'Q8-3', 'C''est le synonyme parfait de mise en forme ou de façonnage.', false, NULL FROM public.rooms WHERE room_number = 8;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
 SELECT id, 5, 8, ARRAY['SIGNE'], 'Quel symbole est dessiné sur le sol ?', 'Q8-4', 'Q8-4', 'Suivez la trajectoire.', false, NULL FROM public.rooms WHERE room_number = 8;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
@@ -1084,19 +1085,19 @@ SELECT id, 6, 8, ARRAY['REVELATION', 'RÉVÉLATION'], 'Mini-jeu (fin) : quel mot
 
 -- Room 9: QUESTION (3 questions + mini-jeu + énigme)
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 1, 9, ARRAY['CLASSEMENT', 'CODE', 'ARCHIVE'], 'Mini-jeu : reconstituez le code de classement.', 'MINI-9', 'CLASSEMENT', 'Chaque code est important.', false, NULL FROM public.rooms WHERE room_number = 9;
+SELECT id, 1, 9, ARRAY['ANOMALIE', 'anomalie', 'Anomalie'], 'Mini-jeu : Repérer l''anomalie dans les affichages des bonbons et de leur prix.', 'MINI-9', 'CLASSEMENT', 'Attention, une seule anomalie est pertinente.', false, NULL FROM public.rooms WHERE room_number = 9;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 2, 9, ARRAY['ARCHIVE'], 'Quel mot apparaît dans les archives ?', 'Q9-1', 'Q9-1', 'Les vieux dossiers contiennent la clé.', false, NULL FROM public.rooms WHERE room_number = 9;
+SELECT id, 2, 9, ARRAY['CUIT', 'Cuit', 'cuit'], 'Quel est le mot disparu de la recette secrète historique affichée au mur ?', 'Q9-1', 'Q9-1', 'C''est l''état d''un aliment après un passage sur le feu, mais c''est aussi un mot familier pour dire qu''on a un peu trop bu ou qu''on est fatigué.', false, NULL FROM public.rooms WHERE room_number = 9;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 3, 9, ARRAY['PAPIER'], 'Quel mot est inscrit sur la boîte de documents ?', 'Q9-2', 'Q9-2', 'La boîte cache un indice.', false, NULL FROM public.rooms WHERE room_number = 9;
+SELECT id, 3, 9, ARRAY['BOURGEONS SAPIN', 'Bourgeons sapin', 'bourgeons sapin', 'Bourgeons Sapin'], 'Quel est le produit le plus vendu historiquement à la CDHV ?', 'Q9-2', 'Q9-2', 'on en a parlé dans le massif.', false, NULL FROM public.rooms WHERE room_number = 9;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 4, 9, ARRAY['SILENCE'], 'Quel mot apparaît sur le panneau de silence ?', 'Q9-3', 'Q9-3', 'Écoutez le silence des archives.', false, NULL FROM public.rooms WHERE room_number = 9;
+SELECT id, 4, 9, ARRAY['4/1', '4', '1'], 'Combien de sachets de 250g faut-il pour faire un kilo de bonheur ?', 'Q9-3', 'Q9-3', 'Question piège, 4 en math /1 emotionnellement.', false, NULL FROM public.rooms WHERE room_number = 9;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 5, 9, ARRAY['ARCHIVES'], 'Mini-jeu (fin) : quel mot ouvre le coffre des archives ?', 'MINI-9-end', NULL, 'Combinez les indexes.', false, NULL FROM public.rooms WHERE room_number = 9;
+SELECT id, 5, 9, ARRAY['PRIX', 'Prix', 'prix'], 'Mini-jeu (fin) : Composer un panier harmonieux avec 5 couleurs de bonbons différents pour en estimer le Juste Prix de tête.', 'MINI-9-end', 'PANIER', 'JSP', false, NULL FROM public.rooms WHERE room_number = 9;
 
 -- Room 10: QUESTION (4 questions + mini-jeu + énigme)
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 1, 10, ARRAY['PANNEAUX', 'PANNEAU', 'COMBINAISON'], 'Mini-jeu : trouvez la bonne combinaison de panneaux.', 'MINI-10', 'PANNEAUX', 'Les panneaux forment un mot.', false, NULL FROM public.rooms WHERE room_number = 10;
+SELECT id, 1, 10, ARRAY['PANNEAUX', 'PANNEAU', 'COMBINAISON'], 'Mini-jeu : Analyser le plan officiel pour tracer l''itinéraire le plus court d''un colis.', 'MINI-10', 'PANNEAUX', 'Les panneaux forment un mot.', false, NULL FROM public.rooms WHERE room_number = 10;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
 SELECT id, 2, 10, ARRAY['TOIT'], 'Quel mot apparaît sur le panneau du rooftop ?', 'Q10-1', 'Q10-1', 'Admirez la vue pour trouver l''indice.', false, NULL FROM public.rooms WHERE room_number = 10;
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
@@ -1110,7 +1111,7 @@ SELECT id, 6, 10, ARRAY['AVENTURE'], 'Mini-jeu (fin) : quel mot conclut l''avent
 
 -- Room 11: QUESTION
 INSERT INTO public.answers (room_id, question_order, room_order, expected_answers, question_text, hint_piece, code_part, next_question_hint, includes_history, history_piece)
-SELECT id, 1, 11, ARRAY['TRESOR'], 'Quel est le mot du trésor ?', 'TR', 'TR', 'Le coffre garde la dernière clé.', false, NULL FROM public.rooms WHERE room_number = 11;
+SELECT id, 1, 11, ARRAY['TRESOR', 'tresor', 'trésor', 'Tresor', 'Trésor'], 'Pas de question ici, il vous suffit juste de recoller tous vos indices pour finir l''escape game!', 'TR', 'TR', 'Cette salle est dédiée à la révélation finale.', false, NULL FROM public.rooms WHERE room_number = 11;
 
 -- ============================================================================
 -- END: Schema complete and seeded
