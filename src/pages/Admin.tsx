@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,6 @@ import {
   LogOut,
   Trophy,
   Users,
-  CheckCircle,
   Plus,
   Minus,
   RefreshCw,
@@ -98,7 +98,8 @@ interface HintProgression {
 interface RoomGuideQuestion {
   prompt: string;
   hint: string;
-  answer: string;
+  answer?: string;
+  open_ended?: boolean;
 }
 
 interface RoomGuide {
@@ -114,7 +115,7 @@ interface RoomGuide {
   mini_game_end: {
     title: string;
     hints: string;
-    answer: string;
+    answer?: string;
   };
 }
 
@@ -122,7 +123,7 @@ const roomGuides: RoomGuide[] = [
   {
     room_number: 1,
     title: "Salle 1 - Accueil",
-    mj: "Accueillez l'équipe et expliquez le contexte : ils doivent trouver le chiffre de départ pour lancer l'aventure.",
+    mj: "Accueillez l'équipe et expliquez le contexte : ils doivent répondre à la question de départ pour debuter l'aventure.",
     mini_game: {
       rules: "Aucun mini-jeu dans cette salle.",
       attention: "Restez clair sur le premier indice.",
@@ -144,7 +145,7 @@ const roomGuides: RoomGuide[] = [
   {
     room_number: 2,
     title: "Salle 2 - Massif",
-    mj: "Animateur de terrain. Il divise le groupe en deux sous-équipes : les \"pisteurs\" et les \"orienteurs\".",
+    mj: "Animateur de terrain. Il divise le groupe en deux sous-équipes : les 'pisteurs' et les 'orienteurs'.",
     mini_game: {
       rules: "Mini-jeu : Le Pistage du Lynx : Identifier les traces au sol. Chaque trace mène à une lettre. L'ensemble forme le nom d'un sommet vosgien.",
       attention: "Attention à l'ordre, une seule combinaison est correcte.",
@@ -292,7 +293,7 @@ const roomGuides: RoomGuide[] = [
       {
         prompt: "Question 1 : mot dans le catalogue",
         hint: "Invitez-les à regarder le catalogue des livres.",
-        answer: "catalogue",
+        open_ended: true,
       },
       {
         prompt: "Question 2 : mot sur la première page",
@@ -387,40 +388,8 @@ const roomGuides: RoomGuide[] = [
   },
   {
     room_number: 9,
-    title: "Salle 9 - Magasin éphémère",
+    title: "Salle 9 - Salle de repos (à compléter)",
     mj: "Expliquez que les archives contiennent des indices anciens à déchiffrer.",
-    mini_game: {
-      rules: "Mini-jeu : Repérer l'anomalie dans les affichages des bonbons et de leur prix.",
-      attention: "Attention, une seule anomalie est pertinente.",
-      answer: "ANOMALIE",
-    },
-    questions: [
-      {
-        prompt: "Question 1 : Quel est le mot disparu de la recette secrète historique affichée au mur ?",
-        hint: "C'est l'état d'un aliment après un passage sur le feu, mais c'est aussi un mot familier pour dire qu'on a un peu trop bu ou qu'on est fatigué.",
-        answer: "Cuit",
-      },
-      {
-        prompt: "Question 2 : Quel est le produit le plus vendu historiquement à la CDHV ? ",
-        hint: "on en a parlé dans le massif.",
-        answer: "Bourgeon de sapin",
-      },
-      {
-        prompt: "Question 3 : Combien de sachets de 250g faut-il pour faire un kilo de bonheur ?",
-        hint: "Question piège.",
-        answer: "4 en math /1 emotionnellement",
-      },
-    ],
-    mini_game_end: {
-      title: "Mini-jeu (fin) 9 :  Composer un panier harmonieux avec 5 couleurs de bonbons différents pour en estimer le Juste Prix de tête.",
-      hints: "JSP",
-      answer: "PRIX",
-    },
-  },
-  {
-    room_number: 10,
-    title: "Salle 10 - Repos (à compléter)",
-    mj: "Présentez le rooftop comme le point culminant où le vent souffle des indices.",
     mini_game: {
       rules: "Mini-jeu : Analyser le plan officiel pour tracer l'itinéraire le plus court d'un colis.",
       attention: "Attention, chaque détour peut coûter des points précieux.",
@@ -449,9 +418,41 @@ const roomGuides: RoomGuide[] = [
       },
     ],
     mini_game_end: {
-      title: "Mini-jeu (fin) 10 : mot de l'aventure sur le toit",
+      title: "Mini-jeu (fin) 9 : mot de l'aventure sur le toit",
       hints: "Assemblez la carte et les indices météo.",
       answer: "COMBINAISON",
+    },
+  },
+  {
+    room_number: 10,
+    title: "Salle 10 - Magasin éphémère (à compléter)",
+    mj: "Expliquez que les archives contiennent des indices anciens à déchiffrer.",
+    mini_game: {
+      rules: "Mini-jeu : Repérer l'anomalie dans les affichages des bonbons et de leur prix.",
+      attention: "Attention, une seule anomalie est pertinente.",
+      answer: "ANOMALIE",
+    },
+    questions: [
+      {
+        prompt: "Question 1 : Quel est le mot disparu de la recette secrète historique affichée au mur ?",
+        hint: "C'est l'état d'un aliment après un passage sur le feu, mais c'est aussi un mot familier pour dire qu'on a un peu trop bu ou qu'on est fatigué.",
+        answer: "Cuit",
+      },
+      {
+        prompt: "Question 2 : Quel est le produit le plus vendu historiquement à la CDHV ? ",
+        hint: "on en a parlé dans le massif.",
+        answer: "Bourgeon de sapin",
+      },
+      {
+        prompt: "Question 3 : Combien de sachets de 250g faut-il pour faire un kilo de bonheur ?",
+        hint: "Question piège.",
+        answer: "4 en math /1 emotionnellement",
+      },
+    ],
+    mini_game_end: {
+      title: "Mini-jeu (fin) 10 :  Composer un panier harmonieux avec 5 couleurs de bonbons différents pour en estimer le Juste Prix de tête.",
+      hints: "JSP",
+      answer: "PRIX",
     },
   },
   {
@@ -478,6 +479,36 @@ const roomGuides: RoomGuide[] = [
   },
 ];
 
+// Hook scroll reveal bidirectionnel
+const useScrollReveal = (ref: React.RefObject<HTMLDivElement>) => {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => setVisible(entry.isIntersecting),
+      { threshold: 0.18 }
+    );
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [ref]);
+  return visible;
+};
+
+// Composant carte salle avec scroll reveal
+const RoomCard = ({ children, roomCardStyle }: { children: React.ReactNode; roomCardStyle: string }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const visible = useScrollReveal(ref);
+  return (
+    <div
+      ref={ref}
+      className={`p-4 rounded-lg border transition-all duration-500 ${roomCardStyle} ${
+        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+      }`}
+    >
+      {children}
+    </div>
+  );
+};
+
 const Admin = () => {
   const navigate = useNavigate();
   
@@ -500,8 +531,6 @@ const Admin = () => {
   // Validation states
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
   const [selectedTeamData, setSelectedTeamData] = useState<TeamProgress | null>(null);
-  const [answerInput, setAnswerInput] = useState("");
-  const [roomNumber, setRoomNumber] = useState("1");
   const [validating, setValidating] = useState(false);
   const [attemptHistory, setAttemptHistory] = useState<AttemptHistory[]>([]);
   const [hintProgression, setHintProgression] = useState<HintProgression[]>([]);
@@ -710,43 +739,6 @@ const Admin = () => {
     }
   };
 
-  // Validate answer
-  const handleValidateAnswer = async () => {
-    if (!admin || !selectedTeam || !roomNumber) {
-      toast.error("Équipe et salle requises");
-      return;
-    }
-
-    setValidating(true);
-    try {
-      const { data, error } = await (supabase.rpc("validate_answer", {
-        p_team_id: selectedTeam,
-        p_admin_id: admin.admin_id,
-        p_room_order: parseInt(roomNumber),
-        p_answer: answerInput.toUpperCase().trim(),
-      }) as any);
-
-      if (error) {
-        toast.error("Erreur de validation");
-      } else if (data && Array.isArray(data) && data.length > 0) {
-        const result = data[0];
-        if (result.room_completed && !result.is_correct && result.points_change === 0) {
-          toast.info("Salle déjà complétée ou toutes les questions sont déjà validées");
-        } else if (result.is_correct) {
-          toast.success("✅ Réponse correcte ! +1 point");
-        } else {
-          toast.error("❌ Réponse incorrecte -1 point");
-        }
-        setAnswerInput("");
-        await handleRefresh();
-        await loadTeamHistory(selectedTeam);
-        await loadTeamHintsProgression(selectedTeam);
-      }
-    } finally {
-      setValidating(false);
-    }
-  };
-
   // Load team history
   const loadTeamHistory = async (teamId: string) => {
     try {
@@ -837,6 +829,39 @@ const Admin = () => {
       setAdjustingPoints(false);
     }
   };
+  // Validate answer inline from guide MJ — toujours +1, pas de vérification texte
+  const handleOpenEndedValidate = async (roomNum: number, questionIdx: number) => {
+    if (!admin || !selectedTeam) {
+      toast.error("Aucune équipe sélectionnée");
+      return;
+    }
+
+    setValidating(true);
+    try {
+      const { data, error } = await (supabase as any).rpc("validate_open_answer", {
+        p_team_id: selectedTeam,
+        p_admin_id: admin.admin_id,
+        p_room_order: roomNum,
+        p_question_order: questionIdx,
+      });
+      console.log("RPC result:", data, error);
+      if (error) {
+        toast.error("Erreur de validation");
+      } else if (data && Array.isArray(data) && data.length > 0) {
+        const result = data[0];
+        if (!result.is_correct && result.points_change === 0) {
+          toast.info("Question déjà validée");
+        } else {
+          toast.success("✅ Validé ! +1 point");
+        }
+        await handleRefresh();
+        await loadTeamHistory(selectedTeam);
+        await loadTeamHintsProgression(selectedTeam);
+      }
+    } finally {
+      setValidating(false);
+    }
+  };
 
   // Logout
   const handleLogout = () => {
@@ -847,8 +872,6 @@ const Admin = () => {
     setPassword("");
     setSelectedTeam(null);
     setSelectedTeamData(null);
-    setAnswerInput("");
-    setRoomNumber("1");
     setAttemptHistory([]);
     toast.success("Déconnecté");
   };
@@ -978,15 +1001,11 @@ const Admin = () => {
         </p>
 
         {/* Tabs */}
-        <Tabs defaultValue="leaderboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 bg-slate-900 border border-slate-800">
+        <Tabs defaultValue="mj-guide" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 bg-slate-900 border border-slate-800">
             <TabsTrigger value="leaderboard" className="flex items-center gap-2">
               <Trophy className="h-4 w-4" />
               <span className="hidden sm:inline">Classement</span>
-            </TabsTrigger>
-            <TabsTrigger value="validation" className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4" />
-              <span className="hidden sm:inline">Validation</span>
             </TabsTrigger>
             <TabsTrigger value="teams" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
@@ -1030,147 +1049,31 @@ const Admin = () => {
                             <p className="text-xs text-slate-400">{entry.members}</p>
                           </div>
                         </div>
+                      <div className="flex items-center gap-3">
                         <p className="text-2xl font-bold text-blue-400">{entry.points} pts</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Validation Tab */}
-          <TabsContent value="validation" className="space-y-6">
-            <Card className="border-slate-800 bg-slate-950">
-              <CardHeader>
-                <CardTitle>Valider une Réponse</CardTitle>
-                <CardDescription>
-                  Entrez la réponse d'une équipe pour une salle
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Team selection */}
-                <div className="space-y-2">
-                  <Label>Sélectionner l'équipe</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-40 overflow-y-auto">
-                    {teams.map((team) => (
-                      <button
-                        key={team.team_id}
-                        onClick={() => selectTeamForValidation(team.team_id)}
-                        className={`p-3 rounded-lg border-2 text-left transition-all ${
-                          selectedTeam === team.team_id
-                            ? "border-sky-500 bg-sky-950"
-                            : "border-slate-800 bg-slate-900 hover:border-slate-700"
-                        }`}
-                      >
-                        <p className="font-semibold text-slate-200">{team.team_name}</p>
-                        <div className="flex flex-wrap gap-2 mt-1 text-xs text-slate-400">
-                          <span>{team.points} pts</span>
-                          <span>Créée par {team.created_by_admin || 'Inconnu'}</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {selectedTeamData && (
-                  <>
-                    {/* Room selection */}
-                    <div className="space-y-2">
-                      <Label>Numéro de la salle (1-12)</Label>
-                      <Input
-                        type="number"
-                        min="1"
-                        max="12"
-                        value={roomNumber}
-                        onChange={(e) => setRoomNumber(e.target.value)}
-                        className="bg-slate-900 border-slate-700"
-                      />
-                    </div>
-
-                    {/* Answer input */}
-                    <div className="space-y-2">
-                      <Label>Réponse</Label>
-                      <Input
-                        type="text"
-                        value={answerInput}
-                        onChange={(e) => setAnswerInput(e.target.value)}
-                        placeholder="Entrez la réponse..."
-                        className="bg-slate-900 border-slate-700"
-                        onKeyPress={(e) => {
-                          if (e.key === "Enter") handleValidateAnswer();
-                        }}
-                      />
-                    </div>
-
-                    <Button
-                      onClick={handleValidateAnswer}
-                      disabled={validating || !answerInput.trim()}
-                      className="w-full bg-green-600 hover:bg-green-700 no-accent"
-                    >
-                      {validating ? "Validation..." : "Valider"}
-                    </Button>
-
-                    {/* Attempt history */}
-                    <div className="mt-6 pt-6 border-t border-slate-800">
-                      <p className="font-semibold text-slate-200 mb-3">Historique des tentatives</p>
-                      {attemptHistory.length === 0 ? (
-                        <p className="text-slate-400 text-sm">Aucune tentative</p>
-                      ) : (
-                        <div className="space-y-2 max-h-48 overflow-y-auto">
-                          {attemptHistory.map((attempt, idx) => (
-                                <div
-                            key={idx}
-                            className="p-3 bg-slate-900 rounded-lg border border-slate-800 text-sm"
-                          >
-                            <div className="flex items-center justify-between gap-3">
-                              <div>
-                                <span className="font-semibold text-slate-200">
-                                  Salle {attempt.room_order}: {attempt.room_title}
-                                </span>
-                              </div>
-                              <span
-                                className={`rounded-full px-2 py-0.5 text-[11px] font-semibold border ${
-                                  attempt.is_correct
-                                    ? "border-sky-500 bg-sky-500/15 text-sky-100"
-                                    : "border-slate-700 bg-slate-800 text-slate-400"
-                                }`}
-                              >
-                                {attempt.is_correct ? "Validé" : "Incorrect"}
-                              </span>
-                            </div>
-                            <p className="text-slate-400 text-xs mt-2">
-                              Réponse : {attempt.answer_submitted}
-                            </p>
-                            <p className="text-slate-500 text-xs mt-1">
-                              par {attempt.admin_name} • {new Date(attempt.created_at).toLocaleTimeString()}
-                            </p>
-                          </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Manual points adjustment */}
-                    <div className="mt-6 pt-6 border-t border-slate-800">
-                      <div className="flex items-center justify-between mb-3">
-                        <p className="font-semibold text-slate-200">
-                          Ajustement manuel: {selectedTeamData.points} pts
-                        </p>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setShowAdjustDialog(true)}
+                          onClick={() => {
+                            const team = teams.find(t => t.team_name === entry.team_name);
+                            if (team) {
+                              setPointsAdjustTeam(team.team_id);
+                              setPointsAdjustValue(0);
+                              setShowAdjustDialog(true);
+                            }
+                          }}
                         >
-                          Ajuster
+                          <Plus className="h-3 w-3 mr-1" /><Minus className="h-3 w-3" />
                         </Button>
                       </div>
-                    </div>
-                  </>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
+
 
           {/* Teams Tab */}
           <TabsContent value="teams" className="space-y-6">
@@ -1294,7 +1197,7 @@ const Admin = () => {
               </CardHeader>
               <CardContent>
                 {!selectedTeam ? (
-                  <p className="text-slate-400 text-sm">Sélectionnez une équipe dans l'onglet Validation pour voir sa progression.</p>
+                  <p className="text-slate-400 text-sm">Sélectionnez une équipe dans le Guide MJ pour voir sa progression.</p>
                 ) : hintProgression.length === 0 ? (
                   <p className="text-slate-400 text-sm">Aucun indice débloqué pour cette équipe pour le moment.</p>
                 ) : (
@@ -1332,28 +1235,62 @@ const Admin = () => {
                   Un guide rapide pour le maître de jeu avec le rôle, les questions et les indices par salle.
                 </CardDescription>
               </CardHeader>
+              <div>
+                <p className="text-sm text-slate-400 ml-6 mb-4">
+                  Lors de la construction du nouveau batiment, une ancienne boîte en cuivre à été détérée, mais celle-ci est fermée avec un cadenas.
+                  <br></br>
+                  Il vous faudra au cours de cette escape game, finir des jeux et répondre à des question pour obtenir les numéro cachés.
+                  <br></br>
+                  Seul ses numéros, une fois additionnés, sauront vous donner la clé du cadenas !
+                  <br></br>
+                  Bon courage dans votre quête du sucre !!
+                </p>
+              </div>
               <CardContent className="space-y-4">
                 {!selectedTeam ? (
-                  <div className="rounded-xl border border-slate-800 bg-slate-950 p-6 text-slate-300">
-                    <p className="text-slate-200 font-semibold mb-2">Aucune équipe sélectionnée</p>
-                    <p className="text-sm">
-                      Sélectionnez une équipe dans l'onglet Validation pour voir le guide MJ mis à jour avec l'état des questions.
-                    </p>
+                  <div className="space-y-3">
+                    <p className="text-sm text-slate-400">Sélectionnez une équipe pour commencer :</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {teams.map((team) => (
+                        <button
+                          key={team.team_id}
+                          onClick={() => selectTeamForValidation(team.team_id)}
+                          className="p-3 rounded-lg border-2 border-slate-800 bg-slate-900 hover:border-sky-500 hover:bg-sky-950 text-left transition-all"
+                        >
+                          <p className="font-semibold text-slate-200">{team.team_name}</p>
+                          <p className="text-xs text-slate-400 mt-1">{team.members}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">Créée par {team.created_by_admin} · {team.points} pts</p>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 ) : (
-                  <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 text-slate-300">
-                    <p className="text-sm text-slate-400">Équipe sélectionnée :</p>
-                    <p className="text-lg font-semibold text-slate-100">{selectedTeamData?.team_name || 'Equipe'}</p>
+                  <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950 p-4">
+                    <div>
+                      <p className="text-sm text-slate-400">Équipe sélectionnée</p>
+                      <p className="text-lg font-semibold text-slate-100">{selectedTeamData?.team_name || 'Équipe'}</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => { setSelectedTeam(null); setSelectedTeamData(null); }}
+                    >
+                      Changer
+                    </Button>
                   </div>
                 )}
                 {selectedTeam && roomGuides.map((room) => {
                   const correctCount = validatedRoomProgress[room.room_number] ?? 0;
-                  const totalQuestions = room.questions.length;
-                  const isRoomComplete = roomUnlockStatus[room.room_number] ?? false;
+                  const hasMiniGameStart = !room.mini_game.rules.startsWith("Aucun");
+                  const hasMiniGameEnd = !room.mini_game_end.title.startsWith("Pas de");
+                  const totalItems = room.questions.length
+                    + (hasMiniGameStart ? 1 : 0)
+                    + (hasMiniGameEnd ? 1 : 0);
+                  const isRoomComplete = correctCount >= totalItems && totalItems > 0;
                   const roomStatus = isRoomComplete
                     ? "Validé ✓"
                     : correctCount > 0
-                    ? `En cours (${correctCount}/${totalQuestions})`
+                    ? `En cours (${correctCount}/${totalItems})`
                     : "En attente";
                   const roomStatusStyle = isRoomComplete
                     ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-200"
@@ -1371,20 +1308,31 @@ const Admin = () => {
                     ? "border-sky-400/20 bg-sky-500/5"
                     : "border-slate-800 bg-slate-900";
 
+                  // question_order en DB : mini-jeu début = 1, questions = 2..N+1, mini-jeu fin = N+2
+                  const miniGameStartOrder = 1;
+                  const questionStartIdx = hasMiniGameStart ? 2 : 1;
+                  const miniGameEndIdx = questionStartIdx + room.questions.length;
+
+                  // Combien de ces items sont validés ?
+                  // correctCount vient de attemptHistory qui compte toutes les is_correct pour cette salle
+                  // On déduit l'état validé par position dans l'ordre de validation
+                  const miniGameStartValidated = hasMiniGameStart && correctCount >= 1;
+                  const questionsValidatedCount = hasMiniGameStart
+                    ? Math.max(0, correctCount - 1)
+                    : correctCount;
+                  const miniGameEndValidated = hasMiniGameEnd && correctCount >= totalItems;
+
                   return (
-                    <div
-                      key={room.room_number}
-                      className={`p-4 rounded-lg border transition-colors ${roomCardStyle}`}
-                    >
+                    <RoomCard key={room.room_number} roomCardStyle={roomCardStyle}>
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                           <p className={`text-lg font-semibold ${roomTitleStyle}`}>{room.title}</p>
                           <p className="text-sm text-slate-400">
-                            Questions : {totalQuestions} / Mini-jeu (fin) : {room.mini_game_end.title.includes("Pas de") ? 0 : 1} / Mini-jeu : {room.mini_game.rules.includes("Aucun") ? 0 : 1}
+                            Questions : {room.questions.length} / Mini-jeu (fin) : {hasMiniGameEnd ? 1 : 0} / Mini-jeu : {hasMiniGameStart ? 1 : 0}
                           </p>
                           {correctCount > 0 && !isRoomComplete ? (
                             <p className="text-xs text-sky-200 mt-1">
-                              Progression : {correctCount}/{totalQuestions} questions validées
+                              Progression : {correctCount}/{totalItems} validés
                             </p>
                           ) : null}
                         </div>
@@ -1399,20 +1347,41 @@ const Admin = () => {
                           <p>{room.mj}</p>
                         </div>
 
+                        {/* Mini-jeu début */}
                         <div>
                           <p className="font-semibold text-slate-200">Mini-jeu</p>
-                          <div className="rounded-md border border-slate-800 bg-slate-950 p-3 mt-2">
+                          <div className={`rounded-md border p-3 mt-2 ${
+                            miniGameStartValidated || !hasMiniGameStart
+                              ? "border-emerald-400/40 bg-emerald-500/10"
+                              : "border-slate-800 bg-slate-950"
+                          }`}>
                             <p className="font-medium text-slate-100">Règles : {room.mini_game.rules}</p>
                             <p className="text-slate-400 text-xs mt-1">Attention : {room.mini_game.attention}</p>
                             <p className="text-slate-400 text-xs mt-1">Réponse : {room.mini_game.answer}</p>
+                            {hasMiniGameStart && (
+                              miniGameStartValidated ? (
+                                <p className="text-slate-500 text-xs mt-2 italic">✓ Validé par le MJ</p>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  disabled={validating}
+                                  className="mt-2 w-full bg-sky-700 hover:bg-sky-600 text-white disabled:opacity-50"
+                                  onClick={() => handleOpenEndedValidate(room.room_number, miniGameStartOrder)}
+                                >
+                                  ✓ Valider le mini-jeu
+                                </Button>
+                              )
+                            )}
                           </div>
                         </div>
 
+                        {/* Questions */}
                         <div>
                           <p className="font-semibold text-slate-200">Questions</p>
                           <div className="space-y-2 mt-2">
                             {room.questions.map((question, idx) => {
-                              const questionValidated = isRoomComplete || idx < correctCount;
+                              const questionValidated = idx < questionsValidatedCount;
+                              const questionIdx = questionStartIdx + idx;
                               return (
                                 <div
                                   key={idx}
@@ -1433,23 +1402,56 @@ const Admin = () => {
                                     </span>
                                   </div>
                                   <p className="text-slate-400 text-xs mt-1">Indice : {question.hint}</p>
-                                  <p className="text-slate-400 text-xs mt-1">Réponse : {question.answer}</p>
+                                  {question.answer && (
+                                    <p className="text-amber-400/80 text-xs mt-1">Réponse attendue : {question.answer}</p>
+                                  )}
+                                  {questionValidated ? (
+                                    <p className="text-slate-500 text-xs mt-2 italic">✓ Validée par le MJ</p>
+                                  ) : (
+                                    <Button
+                                      size="sm"
+                                      disabled={validating}
+                                      className="mt-2 w-full bg-sky-700 hover:bg-sky-600 text-white disabled:opacity-50"
+                                      onClick={() => handleOpenEndedValidate(room.room_number, questionIdx)}
+                                    >
+                                      ✓ Valider
+                                    </Button>
+                                  )}
                                 </div>
                               );
                             })}
                           </div>
                         </div>
 
+                        {/* Mini-jeu fin */}
                         <div>
                           <p className="font-semibold text-slate-200">Mini-jeu (fin)</p>
-                          <div className="rounded-md border border-slate-800 bg-slate-950 p-3 mt-2">
+                          <div className={`rounded-md border p-3 mt-2 ${
+                            miniGameEndValidated || !hasMiniGameEnd
+                              ? "border-emerald-400/40 bg-emerald-500/10"
+                              : "border-slate-800 bg-slate-950"
+                          }`}>
                             <p className="font-medium text-slate-100">{room.mini_game_end.title}</p>
                             <p className="text-slate-400 text-xs mt-1">Indices : {room.mini_game_end.hints}</p>
                             <p className="text-slate-400 text-xs mt-1">Réponse : {room.mini_game_end.answer}</p>
+                            {hasMiniGameEnd && (
+                              miniGameEndValidated ? (
+                                <p className="text-slate-500 text-xs mt-2 italic">✓ Validé par le MJ</p>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  disabled={validating}
+                                  className="mt-2 w-full bg-sky-700 hover:bg-sky-600 text-white disabled:opacity-50"
+                                  onClick={() => handleOpenEndedValidate(room.room_number, miniGameEndIdx)}
+                                >
+                                  ✓ Valider le mini-jeu (fin)
+                                </Button>
+                              )
+                            )}
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </RoomCard>
                   );
                 })}
               </CardContent>

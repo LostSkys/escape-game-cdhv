@@ -554,6 +554,19 @@ export type Database = {
           room_completed: boolean
         }>
       }
+      validate_open_answer: {
+        Args: {
+          p_team_id: string
+          p_admin_id: string
+          p_room_order: number
+        }
+        Returns: {
+          is_correct: boolean
+          points_change: number
+          new_team_points: number
+          room_completed: boolean
+        }[]
+      }
     }
     Enums: {
       room_type: "QUESTION" | "EVENT"
